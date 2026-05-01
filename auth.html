@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BudgetPro — Sign In</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    :root {
+      --orange:      #f97316;
+      --orange-dark: #ea580c;
+      --orange-light:#fed7aa;
+      --orange-bg:   #fff7ed;
+      --yellow:      #f59e0b;
+      --gradient:    linear-gradient(135deg, #f97316 0%, #f59e0b 100%);
+      --grey-100: #f5f5f5;
+      --grey-200: #e5e5e5;
+      --grey-300: #d4d4d4;
+      --grey-400: #a3a3a3;
+      --grey-500: #737373;
+      --grey-700: #404040;
+      --grey-800: #262626;
+      --grey-900: #171717;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--grey-100);
+      display: flex; min-height: 100vh;
+      color: var(--grey-800);
+    }
+
+    /* ── Left panel ─────────────────────────────────────────────────────── */
+    .left-panel {
+      flex: 1;
+      background: linear-gradient(160deg, #1c0a00 0%, #2d1800 50%, #1a0800 100%);
+      display: flex; flex-direction: column;
+      padding: 40px 48px;
+      position: relative; overflow: hidden;
+    }
+    .left-panel::before {
+      content: '';
+      position: absolute; top: -100px; right: -100px;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(249,115,22,.2) 0%, transparent 60%);
+    }
+    .left-panel::after {
+      content: '';
+      position: absolute; bottom: -80px; left: -60px;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(245,158,11,.15) 0%, transparent 60%);
+    }
+    .left-logo {
+      display: flex; align-items: center; gap: 10px;
+      position: relative; z-index: 1;
+    }
+    .left-logo-icon {
+      width: 40px; height: 40px; background: var(--gradient);
+      border-radius: 11px; display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 18px; box-shadow: 0 4px 16px rgba(249,115,22,.4);
+    }
+    .left-logo-text { font-size: 20px; font-weight: 800; color: #fff; }
+    .left-logo-text span { color: var(--yellow); }
+
+    .left-content {
+      flex: 1; display: flex; flex-direction: column; justify-content: center;
+      position: relative; z-index: 1;
+    }
+    .left-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(249,115,22,.2); border: 1px solid rgba(249,115,22,.3);
+      color: var(--orange-light); font-size: 12px; font-weight: 700;
+      padding: 5px 12px; border-radius: 999px; margin-bottom: 20px; width: fit-content;
+    }
+    .left-content h1 {
+      font-size: 40px; font-weight: 900; line-height: 1.15; color: #fff;
+      margin-bottom: 16px; letter-spacing: -.02em;
+    }
+    .left-content h1 span {
+      background: var(--gradient);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .left-content p { font-size: 15px; color: rgba(255,255,255,.6); line-height: 1.7; margin-bottom: 36px; max-width: 360px; }
+
+    .left-features { display: flex; flex-direction: column; gap: 14px; }
+    .left-feature {
+      display: flex; align-items: center; gap: 12px;
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 10px; padding: 12px 16px;
+    }
+    .left-feature-icon {
+      width: 36px; height: 36px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+    }
+    .left-feature-text { font-size: 13.5px; color: rgba(255,255,255,.8); font-weight: 500; }
+    .left-feature-sub  { font-size: 11.5px; color: rgba(255,255,255,.4); margin-top: 2px; }
+
+    .left-footer {
+      position: relative; z-index: 1;
+      font-size: 12px; color: rgba(255,255,255,.3);
+    }
+
+    /* ── Right panel ─────────────────────────────────────────────────────── */
+    .right-panel {
+      width: 480px; flex-shrink: 0;
+      background: #fff; display: flex; flex-direction: column;
+      padding: 40px 48px; overflow-y: auto;
+    }
+    .right-top {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 40px;
+    }
+    .back-link {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; font-weight: 600; color: var(--grey-500);
+      transition: color .2s; cursor: pointer;
+    }
+    .back-link:hover { color: var(--orange); }
+    .mode-switch {
+      font-size: 13px; color: var(--grey-500);
+    }
+    .mode-switch a { color: var(--orange); font-weight: 700; cursor: pointer; }
+    .mode-switch a:hover { text-decoration: underline; }
+
+    .form-title { font-size: 26px; font-weight: 900; color: var(--grey-900); margin-bottom: 6px; }
+    .form-subtitle { font-size: 14px; color: var(--grey-500); margin-bottom: 32px; }
+
+    .form-group { margin-bottom: 18px; }
+    .form-label {
+      display: block; font-size: 13px; font-weight: 700;
+      color: var(--grey-700); margin-bottom: 7px;
+    }
+    .input-wrap { position: relative; }
+    .input-icon {
+      position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+      color: var(--grey-400); font-size: 14px; pointer-events: none;
+    }
+    .form-input {
+      width: 100%; padding: 11px 14px 11px 38px;
+      border: 1.5px solid var(--grey-200); border-radius: 9px;
+      font-size: 14px; font-family: inherit;
+      color: var(--grey-800); background: var(--grey-100);
+      outline: none; transition: all .2s;
+    }
+    .form-input:focus {
+      border-color: var(--orange); background: #fff;
+      box-shadow: 0 0 0 3px rgba(249,115,22,.12);
+    }
+    .form-input::placeholder { color: var(--grey-400); }
+    .form-input.error { border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,.1); }
+
+    .toggle-pw {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      color: var(--grey-400); cursor: pointer; font-size: 14px; transition: color .2s;
+    }
+    .toggle-pw:hover { color: var(--grey-700); }
+
+    .form-error-msg {
+      font-size: 12px; color: #ef4444; margin-top: 5px;
+      display: flex; align-items: center; gap: 4px;
+    }
+
+    .form-hint { font-size: 12px; color: var(--grey-400); margin-top: 5px; }
+
+    .password-strength { margin-top: 8px; }
+    .strength-bar { height: 4px; background: var(--grey-200); border-radius: 999px; margin-bottom: 4px; overflow: hidden; }
+    .strength-fill { height: 100%; border-radius: 999px; transition: width .3s, background .3s; }
+    .strength-label { font-size: 11px; font-weight: 600; }
+
+    .submit-btn {
+      width: 100%; padding: 13px;
+      background: var(--gradient); color: #fff;
+      border: none; border-radius: 9px;
+      font-size: 15px; font-weight: 800; cursor: pointer;
+      transition: all .2s; margin-top: 6px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      box-shadow: 0 4px 16px rgba(249,115,22,.3);
+    }
+    .submit-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(249,115,22,.4); }
+    .submit-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+    .divider {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 12px; color: var(--grey-400); margin: 20px 0;
+    }
+    .divider::before, .divider::after { content:''; flex:1; height:1px; background:var(--grey-200); }
+
+    .demo-btn {
+      width: 100%; padding: 12px;
+      background: var(--grey-100); color: var(--grey-700);
+      border: 1.5px solid var(--grey-200); border-radius: 9px;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .demo-btn:hover { border-color: var(--orange); color: var(--orange); background: var(--orange-bg); }
+
+    .alert {
+      padding: 12px 14px; border-radius: 8px; font-size: 13.5px;
+      display: flex; align-items: flex-start; gap: 9px; margin-bottom: 16px;
+    }
+    .alert-error   { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; }
+    .alert-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a; }
+    .alert i { flex-shrink: 0; margin-top: 1px; }
+
+    .terms { font-size: 12px; color: var(--grey-400); margin-top: 16px; text-align: center; line-height: 1.6; }
+    .terms a { color: var(--orange); }
+
+    .spinner {
+      width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff; border-radius: 50%;
+      animation: spin .6s linear infinite; display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Logged-in users list ────────────────────────────────────────────── */
+    .users-list { margin-bottom: 24px; }
+    .users-list-label { font-size: 12px; font-weight: 700; color: var(--grey-500); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+    .user-chip {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: 9px;
+      border: 1.5px solid var(--grey-200); background: var(--grey-100);
+      cursor: pointer; transition: all .2s; margin-bottom: 8px;
+    }
+    .user-chip:hover { border-color: var(--orange); background: var(--orange-bg); }
+    .user-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--gradient); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 800; flex-shrink: 0;
+    }
+    .user-chip-name { font-size: 13.5px; font-weight: 700; color: var(--grey-800); }
+    .user-chip-email { font-size: 11.5px; color: var(--grey-500); }
+    .user-chip-arrow { margin-left: auto; color: var(--grey-400); font-size: 12px; }
+
+    @media (max-width: 900px) {
+      .left-panel { display: none; }
+      .right-panel { width: 100%; padding: 32px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Left decorative panel -->
+<div class="left-panel">
+  <div class="left-logo">
+    <div class="left-logo-icon"><i class="fas fa-wallet"></i></div>
+    <div class="left-logo-text">Budget<span>Pro</span></div>
+  </div>
+
+  <div class="left-content">
+    <div class="left-tag"><i class="fas fa-shield-alt"></i> Secure Personal Finance</div>
+    <h1>Your Money.<br>Your <span>Account.</span><br>Your Control.</h1>
+    <p>Track budgets, expenses, income and investments — all under your personal account. Every user's data is fully private and isolated.</p>
+
+    <div class="left-features">
+      <div class="left-feature">
+        <div class="left-feature-icon" style="background:rgba(249,115,22,.2);color:#f97316"><i class="fas fa-wallet"></i></div>
+        <div>
+          <div class="left-feature-text">Smart Budget Planner</div>
+          <div class="left-feature-sub">Set limits by category & sub-category</div>
+        </div>
+      </div>
+      <div class="left-feature">
+        <div class="left-feature-icon" style="background:rgba(34,197,94,.2);color:#22c55e"><i class="fas fa-receipt"></i></div>
+        <div>
+          <div class="left-feature-text">Expense & Income Tracker</div>
+          <div class="left-feature-sub">Log every transaction with full details</div>
+        </div>
+      </div>
+      <div class="left-feature">
+        <div class="left-feature-icon" style="background:rgba(99,102,241,.2);color:#6366f1"><i class="fas fa-chart-line"></i></div>
+        <div>
+          <div class="left-feature-text">Investment Portfolio</div>
+          <div class="left-feature-sub">Country-specific options — India, USA, UK &amp; more</div>
+        </div>
+      </div>
+      <div class="left-feature">
+        <div class="left-feature-icon" style="background:rgba(245,158,11,.2);color:#f59e0b"><i class="fas fa-lock"></i></div>
+        <div>
+          <div class="left-feature-text">Private to You Only</div>
+          <div class="left-feature-sub">Your data is never shared with anyone</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="left-footer">© 2026 BudgetPro. All rights reserved.</div>
+</div>
+
+<!-- Right auth panel -->
+<div class="right-panel" id="right-panel">
+
+  <div class="right-top">
+    <a href="landing.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to home</a>
+    <div class="mode-switch" id="mode-switch-text">
+      Have an account? <a onclick="showLogin()">Sign in</a>
+    </div>
+  </div>
+
+  <!-- Register form -->
+  <div id="register-form">
+    <div class="form-title">Create your account</div>
+    <div class="form-subtitle">Start tracking your finances — free to get started.</div>
+
+    <div id="reg-alert" style="display:none"></div>
+
+    <div id="existing-users-wrap" style="display:none">
+      <div class="users-list">
+        <div class="users-list-label">Existing accounts on this device</div>
+        <div id="existing-users-list"></div>
+      </div>
+      <div class="divider">or create a new account</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Full Name</label>
+      <div class="input-wrap">
+        <i class="fas fa-user input-icon"></i>
+        <input type="text" class="form-input" id="reg-name" placeholder="e.g. Anurag Sharma" autocomplete="name">
+      </div>
+      <div class="form-error-msg" id="reg-name-err" style="display:none"><i class="fas fa-exclamation-circle"></i><span></span></div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Email Address</label>
+      <div class="input-wrap">
+        <i class="fas fa-envelope input-icon"></i>
+        <input type="email" class="form-input" id="reg-email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="form-error-msg" id="reg-email-err" style="display:none"><i class="fas fa-exclamation-circle"></i><span></span></div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <div class="input-wrap">
+        <i class="fas fa-lock input-icon"></i>
+        <input type="password" class="form-input" id="reg-password" placeholder="Min. 8 characters" autocomplete="new-password" oninput="checkPasswordStrength(this.value)">
+        <i class="fas fa-eye toggle-pw" onclick="togglePw('reg-password', this)"></i>
+      </div>
+      <div class="password-strength" id="pw-strength" style="display:none">
+        <div class="strength-bar"><div class="strength-fill" id="strength-fill" style="width:0%"></div></div>
+        <span class="strength-label" id="strength-label"></span>
+      </div>
+      <div class="form-error-msg" id="reg-pw-err" style="display:none"><i class="fas fa-exclamation-circle"></i><span></span></div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Confirm Password</label>
+      <div class="input-wrap">
+        <i class="fas fa-lock input-icon"></i>
+        <input type="password" class="form-input" id="reg-confirm" placeholder="Repeat your password" autocomplete="new-password">
+        <i class="fas fa-eye toggle-pw" onclick="togglePw('reg-confirm', this)"></i>
+      </div>
+      <div class="form-error-msg" id="reg-confirm-err" style="display:none"><i class="fas fa-exclamation-circle"></i><span></span></div>
+    </div>
+
+    <button class="submit-btn" onclick="register()" id="reg-btn">
+      <div class="spinner" id="reg-spinner"></div>
+      <i class="fas fa-user-plus" id="reg-icon"></i>
+      Create Account
+    </button>
+
+    <div class="divider">or try a demo</div>
+    <button class="demo-btn" onclick="loginDemo()">
+      <i class="fas fa-magic"></i> Continue with Demo Account
+    </button>
+
+    <div class="terms">
+      By creating an account you agree that your financial data is stored locally on this device
+      and is never transmitted to any external server.
+    </div>
+  </div>
+
+  <!-- Login form -->
+  <div id="login-form" style="display:none">
+    <div class="form-title">Welcome back</div>
+    <div class="form-subtitle">Sign in to your BudgetPro account.</div>
+
+    <div id="login-alert" style="display:none"></div>
+
+    <div id="quick-users-wrap" style="display:none">
+      <div class="users-list">
+        <div class="users-list-label">Your accounts on this device</div>
+        <div id="quick-users-list"></div>
+      </div>
+      <div class="divider">or sign in manually</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Email Address</label>
+      <div class="input-wrap">
+        <i class="fas fa-envelope input-icon"></i>
+        <input type="email" class="form-input" id="login-email" placeholder="you@example.com" autocomplete="email">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <div class="input-wrap">
+        <i class="fas fa-lock input-icon"></i>
+        <input type="password" class="form-input" id="login-password" placeholder="Your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()">
+        <i class="fas fa-eye toggle-pw" onclick="togglePw('login-password', this)"></i>
+      </div>
+      <div class="form-error-msg" id="login-err" style="display:none"><i class="fas fa-exclamation-circle"></i><span></span></div>
+    </div>
+
+    <button class="submit-btn" onclick="login()" id="login-btn">
+      <div class="spinner" id="login-spinner"></div>
+      <i class="fas fa-sign-in-alt" id="login-icon"></i>
+      Sign In
+    </button>
+
+    <div class="divider">or</div>
+    <button class="demo-btn" onclick="loginDemo()">
+      <i class="fas fa-magic"></i> Continue with Demo Account
+    </button>
+  </div>
+
+</div>
+
+<script>
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function getUsers() {
+  try { return JSON.parse(localStorage.getItem('budgetApp_users') || '[]'); } catch(e) { return []; }
+}
+function saveUsers(users) {
+  localStorage.setItem('budgetApp_users', JSON.stringify(users));
+}
+
+async function hashPassword(password) {
+  const enc = new TextEncoder().encode(password);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function setSession(user) {
+  sessionStorage.setItem('budgetApp_session', JSON.stringify({
+    userId: user.id, name: user.name, email: user.email
+  }));
+}
+
+function getSession() {
+  try { return JSON.parse(sessionStorage.getItem('budgetApp_session')); } catch(e) { return null; }
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+function showErr(id, msg) {
+  const el = document.getElementById(id);
+  el.style.display = 'flex';
+  el.querySelector('span').textContent = msg;
+  const inputId = id.replace('-err','').replace('-name','').replace('-email','').replace('-pw','').replace('-confirm','');
+}
+function hideErr(id) { const el = document.getElementById(id); if(el) el.style.display = 'none'; }
+
+function showAlert(id, msg, type='error') {
+  const el = document.getElementById(id);
+  el.className = `alert alert-${type}`;
+  el.innerHTML = `<i class="fas fa-${type==='error'?'times-circle':'check-circle'}"></i> ${msg}`;
+  el.style.display = 'flex';
+}
+function hideAlert(id) { document.getElementById(id).style.display = 'none'; }
+
+function togglePw(inputId, icon) {
+  const input = document.getElementById(inputId);
+  if (input.type === 'password') { input.type = 'text'; icon.className = 'fas fa-eye-slash toggle-pw'; }
+  else { input.type = 'password'; icon.className = 'fas fa-eye toggle-pw'; }
+  icon.setAttribute('onclick', `togglePw('${inputId}', this)`);
+}
+
+function checkPasswordStrength(val) {
+  const wrap = document.getElementById('pw-strength');
+  const fill = document.getElementById('strength-fill');
+  const label = document.getElementById('strength-label');
+  if (!val) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  let score = 0;
+  if (val.length >= 8)  score++;
+  if (val.length >= 12) score++;
+  if (/[A-Z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^A-Za-z0-9]/.test(val)) score++;
+  const levels = [
+    { w:'20%', c:'#ef4444', t:'Very weak' },
+    { w:'40%', c:'#f97316', t:'Weak' },
+    { w:'60%', c:'#f59e0b', t:'Fair' },
+    { w:'80%', c:'#22c55e', t:'Strong' },
+    { w:'100%',c:'#16a34a', t:'Very strong' },
+  ];
+  const lvl = levels[Math.min(score, 4)];
+  fill.style.width = lvl.w;
+  fill.style.background = lvl.c;
+  label.textContent = lvl.t;
+  label.style.color = lvl.c;
+}
+
+// ── Show existing users ───────────────────────────────────────────────────────
+
+function renderExistingUsers() {
+  const users = getUsers();
+  const regWrap  = document.getElementById('existing-users-wrap');
+  const loginWrap = document.getElementById('quick-users-wrap');
+
+  if (users.length === 0) {
+    if (regWrap)  regWrap.style.display  = 'none';
+    if (loginWrap) loginWrap.style.display = 'none';
+    return;
+  }
+
+  // Register page: show accounts so they can switch to login
+  if (regWrap) {
+    regWrap.style.display = 'block';
+    document.getElementById('existing-users-list').innerHTML = users.map(u => `
+      <div class="user-chip" onclick="quickLogin('${u.id}')">
+        <div class="user-avatar">${u.name.charAt(0).toUpperCase()}</div>
+        <div>
+          <div class="user-chip-name">${u.name}</div>
+          <div class="user-chip-email">${u.email}</div>
+        </div>
+        <i class="fas fa-chevron-right user-chip-arrow"></i>
+      </div>`).join('');
+  }
+
+  // Login page: quick-select user
+  if (loginWrap) {
+    loginWrap.style.display = 'block';
+    document.getElementById('quick-users-list').innerHTML = users.map(u => `
+      <div class="user-chip" onclick="prefillEmail('${u.email}')">
+        <div class="user-avatar">${u.name.charAt(0).toUpperCase()}</div>
+        <div>
+          <div class="user-chip-name">${u.name}</div>
+          <div class="user-chip-email">${u.email}</div>
+        </div>
+        <i class="fas fa-chevron-right user-chip-arrow"></i>
+      </div>`).join('');
+  }
+}
+
+function prefillEmail(email) {
+  document.getElementById('login-email').value = email;
+  document.getElementById('login-password').focus();
+}
+
+async function quickLogin(userId) {
+  const users = getUsers();
+  const user = users.find(u => u.id === userId);
+  if (!user) return;
+  // Ask for password
+  const pw = prompt(`Enter password for ${user.name} (${user.email}):`);
+  if (!pw) return;
+  const hash = await hashPassword(pw);
+  if (hash !== user.passwordHash) { alert('Incorrect password.'); return; }
+  setSession(user);
+  window.location.href = 'index.html';
+}
+
+// ── Switch modes ──────────────────────────────────────────────────────────────
+
+function showLogin() {
+  document.getElementById('register-form').style.display = 'none';
+  document.getElementById('login-form').style.display    = 'block';
+  document.getElementById('mode-switch-text').innerHTML  = `Don't have an account? <a onclick="showRegister()">Sign up</a>`;
+  renderExistingUsers();
+}
+
+function showRegister() {
+  document.getElementById('login-form').style.display    = 'none';
+  document.getElementById('register-form').style.display = 'block';
+  document.getElementById('mode-switch-text').innerHTML  = `Have an account? <a onclick="showLogin()">Sign in</a>`;
+  renderExistingUsers();
+}
+
+// ── Register ──────────────────────────────────────────────────────────────────
+
+async function register() {
+  hideAlert('reg-alert');
+  hideErr('reg-name-err'); hideErr('reg-email-err'); hideErr('reg-pw-err'); hideErr('reg-confirm-err');
+
+  const name     = document.getElementById('reg-name').value.trim();
+  const email    = document.getElementById('reg-email').value.trim().toLowerCase();
+  const password = document.getElementById('reg-password').value;
+  const confirm  = document.getElementById('reg-confirm').value;
+
+  let valid = true;
+  if (!name) { showErr('reg-name-err', 'Name is required'); document.getElementById('reg-name').classList.add('error'); valid = false; }
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showErr('reg-email-err', 'Enter a valid email address'); valid = false; }
+  if (password.length < 8) { showErr('reg-pw-err', 'Password must be at least 8 characters'); valid = false; }
+  if (password !== confirm) { showErr('reg-confirm-err', 'Passwords do not match'); valid = false; }
+  if (!valid) return;
+
+  const users = getUsers();
+  if (users.find(u => u.email === email)) {
+    showAlert('reg-alert', 'An account with this email already exists. Please sign in instead.');
+    return;
+  }
+
+  const btn = document.getElementById('reg-btn');
+  btn.disabled = true;
+  document.getElementById('reg-spinner').style.display = 'block';
+  document.getElementById('reg-icon').style.display    = 'none';
+
+  try {
+    const passwordHash = await hashPassword(password);
+    const newUser = { id: uid(), name, email, passwordHash, createdAt: new Date().toISOString() };
+    users.push(newUser);
+    saveUsers(users);
+    setSession(newUser);
+
+    showAlert('reg-alert', `Welcome, ${name}! Your account has been created.`, 'success');
+    setTimeout(() => { window.location.href = 'index.html'; }, 800);
+  } catch(e) {
+    showAlert('reg-alert', 'Something went wrong. Please try again.');
+    btn.disabled = false;
+    document.getElementById('reg-spinner').style.display = 'none';
+    document.getElementById('reg-icon').style.display    = 'inline';
+  }
+}
+
+// ── Login ─────────────────────────────────────────────────────────────────────
+
+async function login() {
+  hideAlert('login-alert');
+  hideErr('login-err');
+
+  const email    = document.getElementById('login-email').value.trim().toLowerCase();
+  const password = document.getElementById('login-password').value;
+
+  if (!email || !password) {
+    showErr('login-err', 'Please enter your email and password');
+    return;
+  }
+
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true;
+  document.getElementById('login-spinner').style.display = 'block';
+  document.getElementById('login-icon').style.display    = 'none';
+
+  try {
+    const passwordHash = await hashPassword(password);
+    const users = getUsers();
+    const user  = users.find(u => u.email === email && u.passwordHash === passwordHash);
+
+    if (!user) {
+      showErr('login-err', 'Incorrect email or password');
+      btn.disabled = false;
+      document.getElementById('login-spinner').style.display = 'none';
+      document.getElementById('login-icon').style.display    = 'inline';
+      return;
+    }
+
+    setSession(user);
+    window.location.href = 'index.html';
+  } catch(e) {
+    showErr('login-err', 'Something went wrong. Please try again.');
+    btn.disabled = false;
+    document.getElementById('login-spinner').style.display = 'none';
+    document.getElementById('login-icon').style.display    = 'inline';
+  }
+}
+
+// ── Demo account ──────────────────────────────────────────────────────────────
+
+async function loginDemo() {
+  const DEMO_EMAIL = 'demo@budgetpro.app';
+  const DEMO_PASS  = 'demo1234';
+  let users = getUsers();
+  let demo  = users.find(u => u.email === DEMO_EMAIL);
+
+  if (!demo) {
+    const passwordHash = await hashPassword(DEMO_PASS);
+    demo = { id: 'demo_user', name: 'Demo User', email: DEMO_EMAIL, passwordHash, createdAt: new Date().toISOString() };
+    users.push(demo);
+    saveUsers(users);
+  }
+
+  setSession(demo);
+  window.location.href = 'index.html';
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+(function init() {
+  // If already logged in, go straight to app
+  if (getSession()) { window.location.href = 'index.html'; return; }
+
+  // Check URL param for mode
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('mode') === 'login') showLogin();
+  else renderExistingUsers();
+})();
+</script>
+</body>
+</html>

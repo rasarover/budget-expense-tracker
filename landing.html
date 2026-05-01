@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BudgetPro — Take Control of Your Finances</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    :root {
+      --orange:       #f97316;
+      --orange-dark:  #ea580c;
+      --orange-light: #fed7aa;
+      --orange-bg:    #fff7ed;
+      --yellow:       #f59e0b;
+      --yellow-dark:  #d97706;
+      --yellow-light: #fde68a;
+      --yellow-bg:    #fffbeb;
+      --grey-50:  #fafafa;
+      --grey-100: #f5f5f5;
+      --grey-200: #e5e5e5;
+      --grey-300: #d4d4d4;
+      --grey-400: #a3a3a3;
+      --grey-500: #737373;
+      --grey-600: #525252;
+      --grey-700: #404040;
+      --grey-800: #262626;
+      --grey-900: #171717;
+      --white:    #ffffff;
+      --radius:   14px;
+      --radius-sm: 8px;
+      --radius-lg: 24px;
+      --shadow-sm: 0 1px 4px rgba(0,0,0,.06);
+      --shadow:    0 4px 16px rgba(0,0,0,.08);
+      --shadow-md: 0 8px 32px rgba(0,0,0,.1);
+      --shadow-lg: 0 20px 60px rgba(0,0,0,.12);
+      --gradient:  linear-gradient(135deg, var(--orange) 0%, var(--yellow) 100%);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--grey-100);
+      color: var(--grey-800);
+      font-size: 15px;
+      line-height: 1.65;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; font-family: inherit; border: none; }
+
+    .container { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
+
+    /* ── Buttons ─────────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 24px; border-radius: var(--radius-sm);
+      font-size: 14.5px; font-weight: 700;
+      cursor: pointer; transition: all .2s ease;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: var(--gradient); color: #fff;
+      box-shadow: 0 4px 20px rgba(249,115,22,.35);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(249,115,22,.45); }
+    .btn-outline {
+      background: transparent; border: 2px solid var(--grey-300); color: var(--grey-700);
+    }
+    .btn-outline:hover { border-color: var(--orange); color: var(--orange); background: var(--orange-bg); }
+    .btn-white {
+      background: #fff; color: var(--orange); font-weight: 800;
+      box-shadow: 0 4px 20px rgba(0,0,0,.15);
+    }
+    .btn-white:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,.2); }
+    .btn-lg { padding: 15px 32px; font-size: 16px; border-radius: 12px; }
+    .btn-sm { padding: 8px 16px; font-size: 13px; }
+
+    /* ── Navbar ──────────────────────────────────────────────────────────── */
+    .navbar {
+      background: var(--white); border-bottom: 1px solid var(--grey-200);
+      position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow-sm);
+    }
+    .nav-inner {
+      display: flex; align-items: center; justify-content: space-between; height: 68px;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; }
+    .nav-logo-icon {
+      width: 40px; height: 40px; background: var(--gradient);
+      border-radius: 11px; display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 18px; box-shadow: 0 3px 12px rgba(249,115,22,.3);
+    }
+    .nav-logo-text { font-size: 20px; font-weight: 800; color: var(--grey-900); }
+    .nav-logo-text span { color: var(--orange); }
+    .nav-links { display: flex; align-items: center; gap: 32px; }
+    .nav-links a { font-size: 14px; font-weight: 500; color: var(--grey-600); transition: color .2s; }
+    .nav-links a:hover { color: var(--orange); }
+    .nav-cta { display: flex; align-items: center; gap: 10px; }
+
+    /* ── Hero ────────────────────────────────────────────────────────────── */
+    .hero {
+      background: var(--white); padding: 90px 0 80px;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: ''; position: absolute; top: -120px; right: -180px;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(251,191,36,.18) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .hero::after {
+      content: ''; position: absolute; bottom: -80px; left: -100px;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(249,115,22,.12) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .hero-inner {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 60px;
+      align-items: center; position: relative; z-index: 1;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: var(--orange-bg); border: 1px solid var(--orange-light);
+      color: var(--orange-dark); font-size: 12.5px; font-weight: 700;
+      padding: 5px 12px; border-radius: 999px; margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-size: 52px; font-weight: 900; line-height: 1.1;
+      color: var(--grey-900); margin-bottom: 20px; letter-spacing: -.02em;
+    }
+    .hero h1 .highlight {
+      background: var(--gradient);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero-desc { font-size: 17px; color: var(--grey-500); line-height: 1.7; margin-bottom: 32px; max-width: 480px; }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .hero-note { margin-top: 16px; font-size: 12.5px; color: var(--grey-400); display: flex; align-items: center; gap: 6px; }
+
+    /* Hero Visual */
+    .hero-visual { position: relative; }
+    .hero-card-main {
+      background: var(--white); border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg); padding: 24px;
+      border: 1px solid var(--grey-200); position: relative; z-index: 2;
+    }
+    .hero-card-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;
+    }
+    .hero-card-title { font-size: 14px; font-weight: 700; color: var(--grey-700); }
+    .hero-card-badge {
+      background: var(--orange-bg); color: var(--orange); font-size: 11px; font-weight: 700;
+      padding: 3px 8px; border-radius: 999px;
+    }
+    .hero-stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .hero-stat {
+      background: var(--grey-100); border-radius: 10px; padding: 12px; border: 1px solid var(--grey-200);
+    }
+    .hero-stat-lbl { font-size: 11px; color: var(--grey-400); font-weight: 500; margin-bottom: 4px; }
+    .hero-stat-val { font-size: 20px; font-weight: 800; }
+    .hero-bar-wrap { margin-bottom: 6px; }
+    .hero-bar-lbl { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--grey-500); margin-bottom: 5px; }
+    .hero-bar { height: 8px; background: var(--grey-200); border-radius: 999px; overflow: hidden; }
+    .hero-bar-fill { height: 100%; border-radius: 999px; }
+    .hero-txn { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--grey-100); }
+    .hero-txn:last-child { border-bottom: none; }
+    .hero-txn-icon { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+    .hero-txn-info { flex: 1; }
+    .hero-txn-name { font-size: 12.5px; font-weight: 600; }
+    .hero-txn-date { font-size: 11px; color: var(--grey-400); }
+    .hero-txn-amt  { font-size: 13px; font-weight: 700; }
+    .float-card {
+      position: absolute; background: var(--white); border-radius: 12px; padding: 12px 14px;
+      box-shadow: var(--shadow-md); border: 1px solid var(--grey-200); font-size: 12.5px;
+      animation: float 4s ease-in-out infinite;
+    }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+    .float-card-1 { top: -20px; right: -20px; animation-delay:.5s; display:flex;align-items:center;gap:8px;font-weight:700; }
+    .float-card-2 { bottom: 30px; left: -30px; animation-delay:1.2s; min-width:130px; }
+
+    /* ── Stats Strip ─────────────────────────────────────────────────────── */
+    .stats-strip { background: var(--gradient); padding: 24px 0; }
+    .stats-strip-inner { display: flex; justify-content: space-around; flex-wrap: wrap; }
+    .strip-stat {
+      text-align: center; padding: 8px 24px;
+      border-right: 1px solid rgba(255,255,255,.2); flex: 1; min-width: 140px;
+    }
+    .strip-stat:last-child { border-right: none; }
+    .strip-stat-val { font-size: 32px; font-weight: 900; color: #fff; line-height: 1; }
+    .strip-stat-lbl { font-size: 12.5px; color: rgba(255,255,255,.85); margin-top: 4px; font-weight: 500; }
+
+    /* ── Sections ────────────────────────────────────────────────────────── */
+    .section { padding: 90px 0; }
+    .section-alt { background: var(--white); }
+    .section-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--orange-bg); border: 1px solid var(--orange-light);
+      color: var(--orange-dark); font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .07em;
+      padding: 5px 12px; border-radius: 999px; margin-bottom: 14px;
+    }
+    .section-title { font-size: 40px; font-weight: 900; line-height: 1.15; color: var(--grey-900); margin-bottom: 14px; letter-spacing: -.02em; }
+    .section-sub { font-size: 16.5px; color: var(--grey-500); max-width: 560px; line-height: 1.7; }
+    .section-header { text-align: center; margin-bottom: 60px; }
+    .section-header .section-sub { margin: 0 auto; }
+
+    /* ── Features ────────────────────────────────────────────────────────── */
+    .features-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+    .feature-card {
+      background: var(--white); border-radius: var(--radius); padding: 28px;
+      border: 1.5px solid var(--grey-200); transition: all .25s ease; position: relative; overflow: hidden;
+    }
+    .feature-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--gradient); opacity: 0; transition: opacity .25s;
+    }
+    .feature-card:hover { border-color: var(--orange-light); box-shadow: var(--shadow-md); transform: translateY(-4px); }
+    .feature-card:hover::before { opacity: 1; }
+    .feature-icon { width: 52px; height: 52px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 18px; }
+    .feature-card h3 { font-size: 17px; font-weight: 800; color: var(--grey-900); margin-bottom: 8px; }
+    .feature-card p  { font-size: 13.5px; color: var(--grey-500); line-height: 1.7; }
+    .feature-list { list-style: none; margin-top: 14px; }
+    .feature-list li { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--grey-600); margin-bottom: 6px; }
+    .feature-list li i { color: var(--orange); font-size: 11px; }
+
+    /* ── How it works ────────────────────────────────────────────────────── */
+    .steps-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 0; position: relative; }
+    .steps-grid::before {
+      content: ''; position: absolute; top: 32px; left: 15%; right: 15%; height: 2px;
+      background: repeating-linear-gradient(90deg, var(--orange) 0, var(--orange) 6px, transparent 6px, transparent 14px);
+    }
+    .step { text-align: center; padding: 0 16px; position: relative; z-index: 1; }
+    .step-num {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: var(--white); border: 3px solid var(--orange-light);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 900; color: var(--orange);
+      margin: 0 auto 18px; box-shadow: 0 4px 20px rgba(249,115,22,.2);
+    }
+    .step-num.active {
+      background: var(--gradient); border-color: transparent; color: #fff;
+      box-shadow: 0 6px 24px rgba(249,115,22,.35);
+    }
+    .step h3 { font-size: 15px; font-weight: 800; color: var(--grey-900); margin-bottom: 8px; }
+    .step p  { font-size: 13px; color: var(--grey-500); line-height: 1.65; }
+
+    /* ── Investment Section ───────────────────────────────────────────────── */
+    .inv-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 70px; align-items: center; }
+    .country-card-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
+    .country-card {
+      background: var(--grey-100); border-radius: 10px; padding: 10px 12px;
+      border: 1.5px solid var(--grey-200); display: flex; align-items: center; gap: 7px;
+      font-size: 12.5px; font-weight: 600; color: var(--grey-700); transition: all .2s;
+    }
+    .country-card.active { background: var(--orange-bg); border-color: var(--orange-light); color: var(--orange-dark); }
+    .country-card .flag { font-size: 18px; }
+    .inv-items-card { background: var(--white); border-radius: var(--radius); border: 1.5px solid var(--grey-200); padding: 16px; box-shadow: var(--shadow); }
+    .inv-items-card-header {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 700; color: var(--grey-700);
+      margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--grey-100);
+    }
+    .inv-item { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--grey-100); font-size: 12.5px; }
+    .inv-item:last-child { border-bottom: none; }
+    .inv-item-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .inv-item-name { flex: 1; font-weight: 600; color: var(--grey-700); }
+    .inv-item-return { font-size: 11.5px; color: #16a34a; font-weight: 700; }
+    .inv-item-tax { font-size: 10.5px; background: var(--orange-bg); color: var(--orange-dark); padding: 1px 6px; border-radius: 4px; font-weight: 600; }
+
+    /* ── App Preview ─────────────────────────────────────────────────────── */
+    .app-preview-section {
+      background: linear-gradient(160deg, var(--grey-900) 0%, #2d1a00 100%);
+      padding: 90px 0; position: relative; overflow: hidden;
+    }
+    .app-preview-section::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% -20%, rgba(249,115,22,.2) 0%, transparent 60%);
+    }
+    .app-preview-inner { text-align: center; position: relative; z-index: 1; }
+    .app-preview-inner .section-tag { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.15); color: var(--yellow-light); }
+    .app-preview-inner .section-title { color: #fff; }
+    .app-preview-inner .section-sub { color: rgba(255,255,255,.6); margin: 0 auto 48px; }
+    .mock-browser {
+      background: var(--grey-800); border-radius: 16px; overflow: hidden;
+      max-width: 960px; margin: 0 auto;
+      box-shadow: 0 32px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.08);
+    }
+    .mock-browser-bar { background: var(--grey-700); padding: 11px 16px; display: flex; align-items: center; gap: 12px; }
+    .browser-dots { display: flex; gap: 6px; }
+    .browser-dots span { width: 12px; height: 12px; border-radius: 50%; }
+    .browser-url { flex: 1; background: var(--grey-800); border-radius: 6px; padding: 5px 12px; font-size: 12px; color: var(--grey-400); display: flex; align-items: center; gap: 6px; }
+    .browser-url i { font-size: 10px; color: #22c55e; }
+    .mock-screen { background: #f1f5f9; min-height: 480px; display: flex; overflow: hidden; }
+    .mini-sidebar { width: 180px; background: #fff; border-right: 1px solid #e2e8f0; padding: 16px 10px; flex-shrink: 0; }
+    .mini-logo { display: flex; align-items: center; gap: 7px; padding: 4px 8px; margin-bottom: 16px; }
+    .mini-logo-icon { width: 28px; height: 28px; background: var(--gradient); border-radius: 7px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; }
+    .mini-logo-text { font-size: 13px; font-weight: 800; color: #1e293b; }
+    .mini-nav-item { display: flex; align-items: center; gap: 7px; padding: 7px 10px; border-radius: 7px; font-size: 11.5px; font-weight: 500; color: #64748b; margin-bottom: 2px; }
+    .mini-nav-item.active { background: #fff7ed; color: var(--orange); font-weight: 700; }
+    .mini-nav-item i { font-size: 11px; width: 14px; text-align: center; }
+    .mini-content { flex: 1; padding: 20px; overflow: hidden; }
+    .mini-title { font-size: 14px; font-weight: 800; color: #1e293b; margin-bottom: 12px; }
+    .mini-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 14px; }
+    .mini-stat { background: #fff; border-radius: 8px; padding: 10px; border: 1px solid #e2e8f0; }
+    .mini-stat-lbl { font-size: 9px; color: #94a3b8; margin-bottom: 3px; font-weight: 500; }
+    .mini-stat-val { font-size: 14px; font-weight: 800; }
+    .mini-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .mini-chart-card { background: #fff; border-radius: 8px; padding: 10px; border: 1px solid #e2e8f0; height: 110px; display: flex; flex-direction: column; }
+    .mini-chart-lbl { font-size: 9px; font-weight: 700; color: #1e293b; margin-bottom: 8px; }
+    .mini-donut-wrap { flex: 1; display: flex; align-items: center; justify-content: center; }
+    .mini-donut { width: 64px; height: 64px; border-radius: 50%; background: conic-gradient(var(--orange) 0% 30%, var(--yellow) 30% 55%, #6366f1 55% 75%, #22c55e 75% 90%, #e5e5e5 90%); display: flex; align-items: center; justify-content: center; }
+    .mini-donut-inner { width: 36px; height: 36px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 800; color: #1e293b; }
+    .mini-bar-row { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
+    .mini-bar-lbl { font-size: 8.5px; color: #64748b; width: 50px; }
+    .mini-bar-track { flex: 1; height: 5px; background: #f1f5f9; border-radius: 999px; }
+    .mini-bar-fill { height: 100%; border-radius: 999px; }
+    .mini-txns { background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; }
+    .mini-txn-header { padding: 8px 10px; font-size: 9px; font-weight: 700; color: #64748b; background: #f8fafc; border-bottom: 1px solid #e2e8f0; text-transform: uppercase; letter-spacing: .05em; }
+    .mini-txn-row { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-bottom: 1px solid #f1f5f9; font-size: 9.5px; }
+    .mini-txn-row:last-child { border-bottom: none; }
+    .mini-txn-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .mini-txn-name { flex: 1; font-weight: 600; color: #1e293b; }
+    .mini-txn-cat  { color: #94a3b8; }
+    .mini-txn-amt  { font-weight: 700; }
+
+    /* ── Countries ───────────────────────────────────────────────────────── */
+    .flags-row { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 12px; margin-top: 36px; }
+    .flag-chip {
+      display: flex; align-items: center; gap: 8px; background: var(--white);
+      border: 1.5px solid var(--grey-200); border-radius: 999px; padding: 8px 16px;
+      font-size: 13px; font-weight: 600; color: var(--grey-700); transition: all .2s;
+    }
+    .flag-chip:hover { border-color: var(--orange); color: var(--orange); background: var(--orange-bg); transform: scale(1.04); }
+    .flag-chip .flag { font-size: 20px; }
+
+    /* ── Signup section ───────────────────────────────────────────────────── */
+    .signup-section { background: var(--white); }
+    .signup-card {
+      max-width: 520px; margin: 0 auto; text-align: center;
+      background: var(--grey-100); border-radius: var(--radius-lg);
+      padding: 48px 40px; border: 1.5px solid var(--grey-200);
+    }
+    .signup-icon {
+      width: 64px; height: 64px; background: var(--gradient);
+      border-radius: 18px; display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 26px; margin: 0 auto 20px;
+      box-shadow: 0 6px 24px rgba(249,115,22,.3);
+    }
+    .signup-card h2 { font-size: 26px; font-weight: 900; color: var(--grey-900); margin-bottom: 10px; }
+    .signup-card p  { font-size: 14.5px; color: var(--grey-500); margin-bottom: 28px; line-height: 1.6; }
+    .signup-form { display: flex; flex-direction: column; gap: 12px; }
+    .signup-form input {
+      width: 100%; padding: 12px 16px; border-radius: var(--radius-sm);
+      border: 1.5px solid var(--grey-300); font-size: 14px; font-family: inherit;
+      background: var(--white); color: var(--grey-800); outline: none; transition: border-color .2s;
+    }
+    .signup-form input:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(249,115,22,.12); }
+    .signup-form input::placeholder { color: var(--grey-400); }
+    .signup-divider { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--grey-400); margin: 4px 0; }
+    .signup-divider::before, .signup-divider::after { content: ''; flex: 1; height: 1px; background: var(--grey-200); }
+    .login-link { font-size: 13px; color: var(--grey-500); margin-top: 14px; }
+    .login-link a { color: var(--orange); font-weight: 700; }
+
+    /* ── CTA ─────────────────────────────────────────────────────────────── */
+    .cta-section {
+      background: var(--gradient); padding: 90px 0; position: relative; overflow: hidden;
+    }
+    .cta-section::before { content: ''; position: absolute; top:-100px;left:-100px; width:400px;height:400px; background:rgba(255,255,255,.07); border-radius:50%; }
+    .cta-section::after  { content: ''; position: absolute; bottom:-80px;right:-60px; width:300px;height:300px; background:rgba(255,255,255,.06); border-radius:50%; }
+    .cta-inner { text-align: center; position: relative; z-index: 1; }
+    .cta-inner h2 { font-size: 44px; font-weight: 900; color: #fff; margin-bottom: 14px; letter-spacing: -.02em; }
+    .cta-inner p  { font-size: 17px; color: rgba(255,255,255,.8); margin-bottom: 36px; }
+    .cta-actions  { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
+    .cta-note { font-size: 12.5px; color: rgba(255,255,255,.65); margin-top: 16px; }
+
+    /* ── Footer ──────────────────────────────────────────────────────────── */
+    .footer { background: var(--grey-900); color: rgba(255,255,255,.6); padding: 56px 0 28px; }
+    .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+    .footer-brand-icon { width:40px;height:40px;background:var(--gradient);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;margin-bottom:12px; }
+    .footer-brand-name { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+    .footer-brand-desc { font-size: 13px; line-height: 1.65; max-width: 220px; }
+    .footer-col-title { font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: rgba(255,255,255,.9); margin-bottom: 14px; }
+    .footer-links { list-style: none; }
+    .footer-links li { margin-bottom: 8px; }
+    .footer-links a { font-size: 13.5px; color: rgba(255,255,255,.55); transition: color .2s; }
+    .footer-links a:hover { color: var(--orange); }
+    .footer-bottom { border-top: 1px solid rgba(255,255,255,.08); padding-top: 24px; display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; flex-wrap: wrap; gap: 12px; }
+    .footer-bottom-right { display: flex; gap: 14px; }
+    .footer-bottom-right a { color: rgba(255,255,255,.45); transition: color .2s; font-size: 18px; }
+    .footer-bottom-right a:hover { color: var(--orange); }
+
+    /* ── Responsive ──────────────────────────────────────────────────────── */
+    @media (max-width: 1024px) { .features-grid{grid-template-columns:1fr 1fr} .footer-grid{grid-template-columns:1fr 1fr} }
+    @media (max-width: 900px) {
+      .hero-inner{grid-template-columns:1fr;gap:40px} .hero-visual{display:none}
+      .inv-inner{grid-template-columns:1fr} .steps-grid{grid-template-columns:1fr 1fr} .steps-grid::before{display:none}
+      .hero h1{font-size:40px}
+    }
+    @media (max-width: 768px) {
+      .nav-links{display:none} .features-grid{grid-template-columns:1fr}
+      .section-title{font-size:30px} .hero h1{font-size:34px}
+      .stats-strip-inner{gap:0} .cta-inner h2{font-size:30px}
+      .footer-grid{grid-template-columns:1fr} .country-card-grid{grid-template-columns:1fr 1fr}
+      .steps-grid{grid-template-columns:1fr} .signup-card{padding:32px 20px}
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navbar ──────────────────────────────────────────────────────────────── -->
+<header class="navbar">
+  <div class="container">
+    <div class="nav-inner">
+      <div class="nav-logo">
+        <div class="nav-logo-icon"><i class="fas fa-wallet"></i></div>
+        <div class="nav-logo-text">Budget<span>Pro</span></div>
+      </div>
+      <nav class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#howitworks">How It Works</a>
+        <a href="#investments">Investments</a>
+        <a href="#countries">Countries</a>
+      </nav>
+      <div class="nav-cta">
+        <a href="auth.html" class="btn btn-outline btn-sm">Sign In</a>
+        <a href="auth.html" class="btn btn-primary btn-sm"><i class="fas fa-user-plus"></i> Create Account</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ── Hero ────────────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-inner">
+
+      <div class="hero-copy">
+        <div class="hero-badge"><i class="fas fa-lock"></i> Secure · Personal · Private</div>
+        <h1>
+          Take Full Control of<br>
+          Your <span class="highlight">Money</span> &amp;<br>
+          <span class="highlight">Investments</span>
+        </h1>
+        <p class="hero-desc">
+          Plan budgets, track expenses, log income and monitor investments — all in one place.
+          Country-specific investment options, smart budget planner and real-time insights.
+          <strong style="color:var(--grey-700)">Your account. Your data.</strong>
+        </p>
+        <div class="hero-actions">
+          <a href="auth.html" class="btn btn-primary btn-lg"><i class="fas fa-user-plus"></i> Create Free Account</a>
+          <a href="#features" class="btn btn-outline btn-lg"><i class="fas fa-play-circle"></i> See Features</a>
+        </div>
+        <div class="hero-note">
+          <i class="fas fa-shield-alt" style="color:var(--orange)"></i>
+          Your financial data is encrypted and tied to your account only
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="float-card float-card-1" style="z-index:10">
+          <div style="width:32px;height:32px;background:#dcfce7;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#16a34a;font-size:14px"><i class="fas fa-arrow-up"></i></div>
+          <div>
+            <div style="font-size:11px;color:#94a3b8;font-weight:500">This Month</div>
+            <div style="color:#16a34a">Saved ₹18,400</div>
+          </div>
+        </div>
+        <div class="float-card float-card-2" style="z-index:10">
+          <div style="font-size:10.5px;color:#94a3b8;font-weight:600;margin-bottom:4px">📊 Budget Used</div>
+          <div style="font-size:18px;font-weight:900;color:var(--orange)">73%</div>
+          <div style="height:4px;background:#f1f5f9;border-radius:999px;margin-top:4px"><div style="height:100%;width:73%;background:var(--gradient);border-radius:999px"></div></div>
+        </div>
+        <div class="hero-card-main">
+          <div class="hero-card-header">
+            <div class="hero-card-title">📈 May 2026 Overview</div>
+            <span class="hero-card-badge">Dashboard</span>
+          </div>
+          <div class="hero-stat-row">
+            <div class="hero-stat">
+              <div class="hero-stat-lbl">Income</div>
+              <div class="hero-stat-val" style="color:#16a34a">₹1,00,000</div>
+            </div>
+            <div class="hero-stat">
+              <div class="hero-stat-lbl">Expenses</div>
+              <div class="hero-stat-val" style="color:#ef4444">₹58,456</div>
+            </div>
+          </div>
+          <div style="margin-bottom:14px">
+            <div class="hero-bar-wrap">
+              <div class="hero-bar-lbl"><span>🏠 Housing</span><span style="font-weight:700">₹28,399 / ₹29,200</span></div>
+              <div class="hero-bar"><div class="hero-bar-fill" style="width:97%;background:linear-gradient(90deg,#f97316,#fbbf24)"></div></div>
+            </div>
+            <div class="hero-bar-wrap">
+              <div class="hero-bar-lbl"><span>🍽️ Food</span><span style="font-weight:700">₹9,560 / ₹14,000</span></div>
+              <div class="hero-bar"><div class="hero-bar-fill" style="width:68%;background:linear-gradient(90deg,#6366f1,#8b5cf6)"></div></div>
+            </div>
+            <div class="hero-bar-wrap">
+              <div class="hero-bar-lbl"><span>🚗 Transport</span><span style="font-weight:700">₹2,820 / ₹5,000</span></div>
+              <div class="hero-bar"><div class="hero-bar-fill" style="width:56%;background:linear-gradient(90deg,#22c55e,#16a34a)"></div></div>
+            </div>
+          </div>
+          <div style="border-top:1px solid #f1f5f9;padding-top:12px">
+            <div style="font-size:11px;font-weight:700;color:#94a3b8;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Recent Transactions</div>
+            <div class="hero-txn">
+              <div class="hero-txn-icon" style="background:#fff7ed;color:#f97316"><i class="fas fa-home"></i></div>
+              <div class="hero-txn-info"><div class="hero-txn-name">Rent</div><div class="hero-txn-date">May 1 · Bank Transfer</div></div>
+              <div class="hero-txn-amt" style="color:#ef4444">-₹25,000</div>
+            </div>
+            <div class="hero-txn">
+              <div class="hero-txn-icon" style="background:#f0fdf4;color:#16a34a"><i class="fas fa-coins"></i></div>
+              <div class="hero-txn-info"><div class="hero-txn-name">May Salary</div><div class="hero-txn-date">May 1 · TechCorp Ltd</div></div>
+              <div class="hero-txn-amt" style="color:#16a34a">+₹95,000</div>
+            </div>
+            <div class="hero-txn">
+              <div class="hero-txn-icon" style="background:#eff6ff;color:#6366f1"><i class="fas fa-chart-line"></i></div>
+              <div class="hero-txn-info"><div class="hero-txn-name">HDFC MF SIP</div><div class="hero-txn-date">May 5 · Investment</div></div>
+              <div class="hero-txn-amt" style="color:#6366f1">-₹10,000</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Stats Strip ──────────────────────────────────────────────────────────── -->
+<div class="stats-strip">
+  <div class="container">
+    <div class="stats-strip-inner">
+      <div class="strip-stat"><div class="strip-stat-val">9+</div><div class="strip-stat-lbl">Countries Supported</div></div>
+      <div class="strip-stat"><div class="strip-stat-val">100+</div><div class="strip-stat-lbl">Investment Types</div></div>
+      <div class="strip-stat"><div class="strip-stat-val">50+</div><div class="strip-stat-lbl">Expense Categories</div></div>
+      <div class="strip-stat"><div class="strip-stat-val">1</div><div class="strip-stat-lbl">Account Per Person</div></div>
+      <div class="strip-stat"><div class="strip-stat-val">0</div><div class="strip-stat-lbl">Data Shared with Others</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Features ────────────────────────────────────────────────────────────── -->
+<section class="section" id="features">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag"><i class="fas fa-sparkles"></i> Everything You Need</div>
+      <h2 class="section-title">One App. Four Powerful Tools.</h2>
+      <p class="section-sub">Everything you need to plan, track and grow your money — under your personal account.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#fff7ed,#fed7aa)"><span style="font-size:24px">💰</span></div>
+        <h3>Budget Planner</h3>
+        <p>Set monthly spending limits by category and sub-category. Copy last month's budget in one click.</p>
+        <ul class="feature-list">
+          <li><i class="fas fa-check-circle"></i> 17 pre-built categories</li>
+          <li><i class="fas fa-check-circle"></i> Unlimited custom sub-categories</li>
+          <li><i class="fas fa-check-circle"></i> Visual progress bars per category</li>
+          <li><i class="fas fa-check-circle"></i> Budget vs Actual chart</li>
+          <li><i class="fas fa-check-circle"></i> Copy last month's plan instantly</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#fef2f2,#fecaca)"><span style="font-size:24px">🧾</span></div>
+        <h3>Expense Tracker</h3>
+        <p>Log every expense with main group, sub-group, payment method and notes. Filter and search easily.</p>
+        <ul class="feature-list">
+          <li><i class="fas fa-check-circle"></i> Main group + sub-group structure</li>
+          <li><i class="fas fa-check-circle"></i> 10 payment methods supported</li>
+          <li><i class="fas fa-check-circle"></i> Search &amp; filter by category</li>
+          <li><i class="fas fa-check-circle"></i> Expense breakdown pie chart</li>
+          <li><i class="fas fa-check-circle"></i> Month-by-month view</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#f0fdf4,#bbf7d0)"><span style="font-size:24px">💵</span></div>
+        <h3>Income Tracker</h3>
+        <p>Track salary, freelance, dividends, rent and every other income source. Net savings auto-calculated.</p>
+        <ul class="feature-list">
+          <li><i class="fas fa-check-circle"></i> 7 income categories</li>
+          <li><i class="fas fa-check-circle"></i> Multiple sources per month</li>
+          <li><i class="fas fa-check-circle"></i> Net savings calculated live</li>
+          <li><i class="fas fa-check-circle"></i> 6-month income trend</li>
+          <li><i class="fas fa-check-circle"></i> Custom income types</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#eff6ff,#bfdbfe)"><span style="font-size:24px">📈</span></div>
+        <h3>Investment Portfolio</h3>
+        <p>Track all your investments. Country-specific options pre-loaded. Add custom investments not in the list.</p>
+        <ul class="feature-list">
+          <li><i class="fas fa-check-circle"></i> 9 countries, 100+ investment types</li>
+          <li><i class="fas fa-check-circle"></i> Returns &amp; tax benefit info shown</li>
+          <li><i class="fas fa-check-circle"></i> Portfolio allocation chart</li>
+          <li><i class="fas fa-check-circle"></i> Custom investment types</li>
+          <li><i class="fas fa-check-circle"></i> Filter by asset type</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#fdf4ff,#e9d5ff)"><span style="font-size:24px">📊</span></div>
+        <h3>Smart Dashboard</h3>
+        <p>All your key numbers at a glance. Charts, recent transactions and 6-month trends in one view.</p>
+        <ul class="feature-list">
+          <li><i class="fas fa-check-circle"></i> Income vs Expense overview</li>
+          <li><i class="fas fa-check-circle"></i> Donut &amp; bar charts</li>
+          <li><i class="fas fa-check-circle"></i> 6-month trend line</li>
+          <li><i class="fas fa-check-circle"></i> Recent transactions feed</li>
+          <li><i class="fas fa-check-circle"></i> Budget utilization %</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#fffbeb,#fde68a)"><span style="font-size:24px">🔐</span></div>
+        <h3>Account &amp; Security</h3>
+        <p>Each user gets their own secure account. Your financial data belongs only to you — fully isolated per user.</p>
+        <ul class="feature-list">
+          <li><i class="fas fa-check-circle"></i> Register with email &amp; password</li>
+          <li><i class="fas fa-check-circle"></i> Data isolated per account</li>
+          <li><i class="fas fa-check-circle"></i> Secure login with session handling</li>
+          <li><i class="fas fa-check-circle"></i> JSON data export / backup</li>
+          <li><i class="fas fa-check-circle"></i> Dark mode support</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── How it works ─────────────────────────────────────────────────────────── -->
+<section class="section section-alt" id="howitworks">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag"><i class="fas fa-route"></i> Simple Workflow</div>
+      <h2 class="section-title">Up and Running in Minutes</h2>
+      <p class="section-sub">Create your account, set up your profile and start tracking immediately.</p>
+    </div>
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-num active">1</div>
+        <h3>Create Account</h3>
+        <p>Register with your name, email and a password. Your account is ready instantly — no approval needed.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Set Your Budget</h3>
+        <p>Go to Budget Planner. Pick categories, set spending limits and add sub-categories as needed.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Log Transactions</h3>
+        <p>Add income and expenses throughout the month. Assign to categories for precise tracking.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <h3>Track Your Wealth</h3>
+        <p>Add investments by asset type. See your full portfolio, expected returns and tax benefits.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Investment Highlight ─────────────────────────────────────────────────── -->
+<section class="section" id="investments" style="background:var(--white);position:relative;overflow:hidden">
+  <div style="position:absolute;right:-200px;top:-200px;width:700px;height:700px;background:radial-gradient(circle,rgba(251,191,36,.1) 0%,transparent 60%);pointer-events:none"></div>
+  <div class="container">
+    <div class="inv-inner">
+      <div>
+        <div style="margin-bottom:14px">
+          <div style="font-size:12px;font-weight:700;color:var(--grey-400);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Select Your Home Country</div>
+          <div class="country-card-grid">
+            <div class="country-card active"><span class="flag">🇮🇳</span> India</div>
+            <div class="country-card"><span class="flag">🇺🇸</span> USA</div>
+            <div class="country-card"><span class="flag">🇬🇧</span> UK</div>
+            <div class="country-card"><span class="flag">🇦🇺</span> Australia</div>
+            <div class="country-card"><span class="flag">🇨🇦</span> Canada</div>
+            <div class="country-card"><span class="flag">🇸🇬</span> Singapore</div>
+            <div class="country-card"><span class="flag">🇦🇪</span> UAE</div>
+            <div class="country-card"><span class="flag">🇩🇪</span> Germany</div>
+            <div class="country-card"><span class="flag">🌍</span> Other</div>
+          </div>
+        </div>
+        <div class="inv-items-card">
+          <div class="inv-items-card-header">
+            <div style="width:28px;height:28px;background:var(--orange-bg);border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--orange);font-size:12px"><i class="fas fa-landmark"></i></div>
+            Government Schemes — India
+            <span style="margin-left:auto;font-size:10px;background:var(--orange);color:#fff;padding:2px 7px;border-radius:999px">9 options</span>
+          </div>
+          <div class="inv-item"><div class="inv-item-dot" style="background:#f97316"></div><div class="inv-item-name">PPF (Public Provident Fund)</div><span class="inv-item-return">7.1% p.a.</span><span class="inv-item-tax">80C</span></div>
+          <div class="inv-item"><div class="inv-item-dot" style="background:#8b5cf6"></div><div class="inv-item-name">Sukanya Samriddhi Yojana</div><span class="inv-item-return">8.2% p.a.</span><span class="inv-item-tax">80C</span></div>
+          <div class="inv-item"><div class="inv-item-dot" style="background:#f59e0b"></div><div class="inv-item-name">NSC (National Savings Cert.)</div><span class="inv-item-return">7.7% p.a.</span><span class="inv-item-tax">80C</span></div>
+          <div class="inv-item"><div class="inv-item-dot" style="background:#22c55e"></div><div class="inv-item-name">Senior Citizen Savings Scheme</div><span class="inv-item-return">8.2% p.a.</span><span class="inv-item-tax">80C</span></div>
+          <div class="inv-item"><div class="inv-item-dot" style="background:#06b6d4"></div><div class="inv-item-name">NPS (National Pension System)</div><span class="inv-item-return">8–12%</span><span class="inv-item-tax">80C+80CCD</span></div>
+          <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--grey-100);display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:11.5px;color:var(--grey-400)">+ 4 more in this category</span>
+            <a href="auth.html" class="btn btn-primary btn-sm">See All</a>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="section-tag"><i class="fas fa-globe"></i> Country-Smart Investments</div>
+        <h2 class="section-title">Investments Tailored to <span style="color:var(--orange)">Your Country</span></h2>
+        <p class="section-sub" style="max-width:100%;margin-bottom:24px">
+          Not every investment is available everywhere. Sukanya Samriddhi Yojana only exists in India. ISA accounts only in the UK. 401(k) only in the USA. BudgetPro knows this — and shows you only what's relevant to you.
+        </p>
+        <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:28px">
+          <div style="display:flex;gap:14px;align-items:flex-start">
+            <div style="width:40px;height:40px;background:var(--orange-bg);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--orange);font-size:16px;flex-shrink:0"><i class="fas fa-map-marker-alt"></i></div>
+            <div><div style="font-size:14px;font-weight:700;color:var(--grey-900);margin-bottom:3px">Pick Your Country</div><div style="font-size:13px;color:var(--grey-500)">Choose from 9 countries — investment options update instantly to show only what's available there.</div></div>
+          </div>
+          <div style="display:flex;gap:14px;align-items:flex-start">
+            <div style="width:40px;height:40px;background:var(--yellow-bg);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--yellow-dark);font-size:16px;flex-shrink:0"><i class="fas fa-list-alt"></i></div>
+            <div><div style="font-size:14px;font-weight:700;color:var(--grey-900);margin-bottom:3px">Pre-filled Information</div><div style="font-size:13px;color:var(--grey-500)">100+ investment types with expected returns, lock-in periods and tax benefit details — all pre-filled.</div></div>
+          </div>
+          <div style="display:flex;gap:14px;align-items:flex-start">
+            <div style="width:40px;height:40px;background:#f0fdf4;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#16a34a;font-size:16px;flex-shrink:0"><i class="fas fa-plus-circle"></i></div>
+            <div><div style="font-size:14px;font-weight:700;color:var(--grey-900);margin-bottom:3px">Add Your Own</div><div style="font-size:13px;color:var(--grey-500)">Can't find your investment? Add it as a custom type with your own asset name and return details.</div></div>
+          </div>
+        </div>
+        <a href="auth.html" class="btn btn-primary btn-lg"><i class="fas fa-chart-line"></i> Track My Investments</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── App Preview ──────────────────────────────────────────────────────────── -->
+<section class="app-preview-section">
+  <div class="container">
+    <div class="app-preview-inner">
+      <div class="section-tag"><i class="fas fa-desktop"></i> App Preview</div>
+      <h2 class="section-title">Clean. Fast. Intuitive.</h2>
+      <p class="section-sub">A sidebar-driven interface with charts, tables and smart forms. Everything one click away.</p>
+      <div class="mock-browser">
+        <div class="mock-browser-bar">
+          <div class="browser-dots"><span style="background:#ff5f57"></span><span style="background:#ffbd2e"></span><span style="background:#28c840"></span></div>
+          <div class="browser-url"><i class="fas fa-lock"></i> budgetpro.app/dashboard</div>
+        </div>
+        <div class="mock-screen">
+          <div class="mini-sidebar">
+            <div class="mini-logo"><div class="mini-logo-icon"><i class="fas fa-wallet"></i></div><div class="mini-logo-text">BudgetPro</div></div>
+            <div class="mini-nav-item active"><i class="fas fa-chart-pie"></i> Dashboard</div>
+            <div class="mini-nav-item"><i class="fas fa-wallet"></i> Budget</div>
+            <div class="mini-nav-item"><i class="fas fa-receipt"></i> Expenses</div>
+            <div class="mini-nav-item"><i class="fas fa-coins"></i> Income</div>
+            <div class="mini-nav-item"><i class="fas fa-chart-line"></i> Investments</div>
+            <div class="mini-nav-item"><i class="fas fa-cog"></i> Settings</div>
+          </div>
+          <div class="mini-content">
+            <div class="mini-title">Dashboard — May 2026</div>
+            <div class="mini-stats">
+              <div class="mini-stat"><div class="mini-stat-lbl">Budget</div><div class="mini-stat-val" style="color:#6366f1">₹68k</div></div>
+              <div class="mini-stat"><div class="mini-stat-lbl">Income</div><div class="mini-stat-val" style="color:#22c55e">₹1L</div></div>
+              <div class="mini-stat"><div class="mini-stat-lbl">Spent</div><div class="mini-stat-val" style="color:#ef4444">₹58k</div></div>
+              <div class="mini-stat"><div class="mini-stat-lbl">Invested</div><div class="mini-stat-val" style="color:#16a34a">₹9.5L</div></div>
+            </div>
+            <div class="mini-charts">
+              <div class="mini-chart-card">
+                <div class="mini-chart-lbl">Expense by Category</div>
+                <div class="mini-donut-wrap">
+                  <div class="mini-donut"><div class="mini-donut-inner">58k</div></div>
+                  <div style="margin-left:8px">
+                    <div style="display:flex;align-items:center;gap:4px;font-size:8.5px;margin-bottom:3px;color:#525252"><span style="width:6px;height:6px;background:#f97316;border-radius:50%;flex-shrink:0;display:inline-block"></span>Housing</div>
+                    <div style="display:flex;align-items:center;gap:4px;font-size:8.5px;margin-bottom:3px;color:#525252"><span style="width:6px;height:6px;background:#fbbf24;border-radius:50%;flex-shrink:0;display:inline-block"></span>Food</div>
+                    <div style="display:flex;align-items:center;gap:4px;font-size:8.5px;margin-bottom:3px;color:#525252"><span style="width:6px;height:6px;background:#6366f1;border-radius:50%;flex-shrink:0;display:inline-block"></span>Transport</div>
+                    <div style="display:flex;align-items:center;gap:4px;font-size:8.5px;color:#525252"><span style="width:6px;height:6px;background:#22c55e;border-radius:50%;flex-shrink:0;display:inline-block"></span>Others</div>
+                  </div>
+                </div>
+              </div>
+              <div class="mini-chart-card">
+                <div class="mini-chart-lbl">Budget vs Actual</div>
+                <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
+                  <div class="mini-bar-row"><div class="mini-bar-lbl">Housing</div><div class="mini-bar-track"><div class="mini-bar-fill" style="width:97%;background:#f97316"></div></div></div>
+                  <div class="mini-bar-row"><div class="mini-bar-lbl">Food</div><div class="mini-bar-track"><div class="mini-bar-fill" style="width:68%;background:#fbbf24"></div></div></div>
+                  <div class="mini-bar-row"><div class="mini-bar-lbl">Transport</div><div class="mini-bar-track"><div class="mini-bar-fill" style="width:56%;background:#6366f1"></div></div></div>
+                  <div class="mini-bar-row"><div class="mini-bar-lbl">Shopping</div><div class="mini-bar-track"><div class="mini-bar-fill" style="width:93%;background:#ef4444"></div></div></div>
+                  <div class="mini-bar-row"><div class="mini-bar-lbl">Health</div><div class="mini-bar-track"><div class="mini-bar-fill" style="width:40%;background:#22c55e"></div></div></div>
+                </div>
+              </div>
+            </div>
+            <div class="mini-txns">
+              <div class="mini-txn-header">Recent Transactions</div>
+              <div class="mini-txn-row"><div class="mini-txn-dot" style="background:#22c55e"></div><div class="mini-txn-name">May Salary</div><div class="mini-txn-cat">Employment</div><div class="mini-txn-amt" style="color:#22c55e">+₹95,000</div></div>
+              <div class="mini-txn-row"><div class="mini-txn-dot" style="background:#f97316"></div><div class="mini-txn-name">Rent</div><div class="mini-txn-cat">Housing</div><div class="mini-txn-amt" style="color:#ef4444">-₹25,000</div></div>
+              <div class="mini-txn-row"><div class="mini-txn-dot" style="background:#6366f1"></div><div class="mini-txn-name">HDFC MF SIP</div><div class="mini-txn-cat">Investment</div><div class="mini-txn-amt" style="color:#6366f1">-₹10,000</div></div>
+              <div class="mini-txn-row"><div class="mini-txn-dot" style="background:#fbbf24"></div><div class="mini-txn-name">Groceries</div><div class="mini-txn-cat">Food</div><div class="mini-txn-amt" style="color:#ef4444">-₹3,200</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Countries ────────────────────────────────────────────────────────────── -->
+<section class="section" id="countries" style="text-align:center">
+  <div class="container">
+    <div class="section-tag" style="margin:0 auto 14px;display:inline-flex"><i class="fas fa-globe-asia"></i> Multi-Country Support</div>
+    <h2 class="section-title">Built for Investors Worldwide</h2>
+    <p class="section-sub" style="margin:0 auto">Each country gets its own investment types — from PPF &amp; NPS in India to 401(k) &amp; Roth IRA in the USA to ISA &amp; SIPP in the UK.</p>
+    <div class="flags-row">
+      <div class="flag-chip"><span class="flag">🇮🇳</span> India <span style="font-size:10px;background:var(--orange-bg);color:var(--orange);padding:1px 5px;border-radius:4px;font-weight:700;margin-left:4px">9 asset types</span></div>
+      <div class="flag-chip"><span class="flag">🇺🇸</span> United States <span style="font-size:10px;background:var(--orange-bg);color:var(--orange);padding:1px 5px;border-radius:4px;font-weight:700;margin-left:4px">6 asset types</span></div>
+      <div class="flag-chip"><span class="flag">🇬🇧</span> United Kingdom <span style="font-size:10px;background:var(--orange-bg);color:var(--orange);padding:1px 5px;border-radius:4px;font-weight:700;margin-left:4px">5 asset types</span></div>
+      <div class="flag-chip"><span class="flag">🇦🇺</span> Australia <span style="font-size:10px;background:var(--orange-bg);color:var(--orange);padding:1px 5px;border-radius:4px;font-weight:700;margin-left:4px">6 asset types</span></div>
+      <div class="flag-chip"><span class="flag">🇨🇦</span> Canada <span style="font-size:10px;background:var(--orange-bg);color:var(--orange);padding:1px 5px;border-radius:4px;font-weight:700;margin-left:4px">5 asset types</span></div>
+      <div class="flag-chip"><span class="flag">🇩🇪</span> Germany <span style="font-size:10px;background:var(--orange-bg);color:var(--orange);padding:1px 5px;border-radius:4px;font-weight:700;margin-left:4px">5 asset types</span></div>
+      <div class="flag-chip"><span class="flag">🇸🇬</span> Singapore <span style="font-size:10px;background:var(--orange-bg);color:var(--orange);padding:1px 5px;border-radius:4px;font-weight:700;margin-left:4px">5 asset types</span></div>
+      <div class="flag-chip"><span class="flag">🇦🇪</span> UAE <span style="font-size:10px;background:var(--orange-bg);color:var(--orange);padding:1px 5px;border-radius:4px;font-weight:700;margin-left:4px">5 asset types</span></div>
+      <div class="flag-chip"><span class="flag">🌍</span> Other / Global</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Sign Up Card ─────────────────────────────────────────────────────────── -->
+<section class="section signup-section" id="signup">
+  <div class="container">
+    <div class="signup-card">
+      <div class="signup-icon"><i class="fas fa-user-plus"></i></div>
+      <h2>Create Your Account</h2>
+      <p>Sign up to start tracking your budgets, expenses, income and investments. Your data stays yours — isolated from every other account.</p>
+      <div class="signup-form">
+        <input type="text" placeholder="Full Name" autocomplete="name">
+        <input type="email" placeholder="Email Address" autocomplete="email">
+        <input type="password" placeholder="Password">
+        <a href="auth.html" class="btn btn-primary btn-lg" style="justify-content:center;margin-top:4px">
+          <i class="fas fa-rocket"></i> Create My Account
+        </a>
+      </div>
+      <div class="signup-divider">or</div>
+      <a href="auth.html" class="btn btn-outline" style="width:100%;justify-content:center">
+        <i class="fas fa-sign-in-alt"></i> Sign in to existing account
+      </a>
+      <div class="login-link">By signing up you agree to keep your own financial data private and secure.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ──────────────────────────────────────────────────────────────────── -->
+<section class="cta-section">
+  <div class="container">
+    <div class="cta-inner">
+      <h2>Start Managing Your Money<br>Smarter Today</h2>
+      <p>Create your account in under 30 seconds. No credit card. No subscription required to get started.</p>
+      <div class="cta-actions">
+        <a href="auth.html" class="btn btn-white btn-lg"><i class="fas fa-user-plus"></i> Create Free Account</a>
+        <a href="auth.html" class="btn btn-lg" style="background:rgba(255,255,255,.15);color:#fff;border:2px solid rgba(255,255,255,.4)">
+          <i class="fas fa-sign-in-alt"></i> Sign In
+        </a>
+      </div>
+      <p class="cta-note"><i class="fas fa-lock"></i> &nbsp;Each account's financial data is completely private and isolated.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ───────────────────────────────────────────────────────────────── -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand-icon"><i class="fas fa-wallet"></i></div>
+        <div class="footer-brand-name">BudgetPro</div>
+        <p class="footer-brand-desc">A secure, account-based personal finance tracker. Plan budgets, track expenses, log income and grow your investments.</p>
+      </div>
+      <div>
+        <div class="footer-col-title">Features</div>
+        <ul class="footer-links">
+          <li><a href="auth.html">Budget Planner</a></li>
+          <li><a href="auth.html">Expense Tracker</a></li>
+          <li><a href="auth.html">Income Tracker</a></li>
+          <li><a href="auth.html">Investment Portfolio</a></li>
+          <li><a href="auth.html">Dashboard &amp; Charts</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Supported Countries</div>
+        <ul class="footer-links">
+          <li><a href="auth.html">🇮🇳 India</a></li>
+          <li><a href="auth.html">🇺🇸 United States</a></li>
+          <li><a href="auth.html">🇬🇧 United Kingdom</a></li>
+          <li><a href="auth.html">🇦🇺 Australia</a></li>
+          <li><a href="auth.html">🇨🇦 Canada &amp; More…</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Account</div>
+        <ul class="footer-links">
+          <li><a href="auth.html">Create Account</a></li>
+          <li><a href="auth.html">Sign In</a></li>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#howitworks">How It Works</a></li>
+          <li><a href="#countries">Countries</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 BudgetPro. All rights reserved.</span>
+      <div class="footer-bottom-right">
+        <a href="#" title="GitHub"><i class="fab fa-github"></i></a>
+        <a href="#" title="Twitter"><i class="fab fa-twitter"></i></a>
+        <a href="#" title="LinkedIn"><i class="fab fa-linkedin"></i></a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
