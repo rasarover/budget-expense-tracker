@@ -575,6 +575,47 @@ function showRegister() {
   renderExistingUsers();
 }
 
+// ── Email validation helpers ──────────────────────────────────────────────────
+
+const DISPOSABLE_DOMAINS = new Set([
+  'mailinator.com','guerrillamail.com','guerrillamail.net','guerrillamail.org',
+  'guerrillamail.de','guerrillamail.info','guerrillamailblock.com','grr.la',
+  'sharklasers.com','spam4.me','yopmail.com','yopmail.fr','cool.fr.nf',
+  'jetable.fr.nf','nospam.ze.tc','nomail.xl.cx','mega.zik.dj','speed.1s.fr',
+  'courriel.fr.nf','moncourrier.fr.nf','monemail.fr.nf','monmail.fr.nf',
+  'throwaway.email','throwam.com','trashmail.com','trashmail.me','trashmail.at',
+  'trashmail.io','trashmail.net','trashmail.org','dispostable.com',
+  'mailnull.com','maildrop.cc','spamgourmet.com','spamgourmet.net',
+  'tempmail.com','temp-mail.org','fakeinbox.com','mailnesia.com',
+  'mailnull.com','spamfree24.org','binkmail.com','safetymail.info',
+  'filzmail.com','sogetthis.com','spamherelots.com','spamhereplease.com',
+  'getonemail.com','tempr.email','discard.email','spamspot.com',
+  'spamthis.co.uk','jetable.com','jetable.net','jetable.org',
+  'example.com','test.com','fake.com','noemail.com','noemail.org',
+]);
+
+function isValidEmail(email) {
+  // Basic format check
+  if (!/^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(email)) return { ok: false, msg: 'Enter a valid email address.' };
+
+  const domain = email.split('@')[1].toLowerCase();
+
+  // Block obviously fake local parts
+  const local = email.split('@')[0].toLowerCase();
+  if (/^(test|fake|dummy|noreply|no-reply|asdf|qwerty|aaa+|bbb+|xxx+)/.test(local))
+    return { ok: false, msg: 'Please use your real email address.' };
+
+  // Block disposable domains
+  if (DISPOSABLE_DOMAINS.has(domain))
+    return { ok: false, msg: 'Disposable email addresses are not allowed. Please use a real email.' };
+
+  // Block domains with no proper TLD (e.g. "user@local" or "user@foo")
+  if (!domain.includes('.'))
+    return { ok: false, msg: 'Enter a valid email address.' };
+
+  return { ok: true };
+}
+
 // ── Register ──────────────────────────────────────────────────────────────────
 
 async function register() {
@@ -588,7 +629,10 @@ async function register() {
 
   let valid = true;
   if (!name) { showErr('reg-name-err', 'Name is required'); document.getElementById('reg-name').classList.add('error'); valid = false; }
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showErr('reg-email-err', 'Enter a valid email address'); valid = false; }
+
+  const emailCheck = isValidEmail(email);
+  if (!emailCheck.ok) { showErr('reg-email-err', emailCheck.msg); valid = false; }
+
   if (password.length < 8) { showErr('reg-pw-err', 'Password must be at least 8 characters'); valid = false; }
   if (password !== confirm) { showErr('reg-confirm-err', 'Passwords do not match'); valid = false; }
   if (!valid) return;
