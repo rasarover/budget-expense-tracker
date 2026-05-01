@@ -1807,9 +1807,17 @@ function renderSplitBalances(el) {
             <div class="balance-sub">${b.net > 0 ? 'owes you' : 'you owe'}</div>
           </div>
           <div class="balance-amount ${b.net >= 0 ? 'owed' : 'owe'}">${b.net >= 0 ? '+' : ''}${fmt(b.net)}</div>
-          ${b.net !== 0 ? `<button class="btn btn-sm btn-outline-primary" onclick="settleWithPerson('${pid}')" title="Settle all with this person">
-            <i class="fas fa-check"></i> Settle
-          </button>` : ''}
+          ${b.net !== 0 ? (() => {
+            const person = state.split.people.find(x => x.id === pid);
+            const mobile = person?.mobile?.replace(/\D/g, '');
+            const waLink = mobile ? `https://wa.me/${mobile}?text=${encodeURIComponent('Hi ' + b.name + '! Just a reminder about our shared expenses. Please check and settle when convenient.')}` : '';
+            return `<div style="display:flex;gap:6px;flex-shrink:0">
+              <button class="btn btn-sm btn-outline-primary" onclick="settleWithPerson('${pid}')" title="Settle all with this person">
+                <i class="fas fa-check"></i> Settle
+              </button>
+              ${waLink ? `<a href="${waLink}" target="_blank" class="btn btn-sm" style="background:#25d366;color:#fff;border:none;display:inline-flex;align-items:center;gap:4px" title="Notify via WhatsApp"><i class="fab fa-whatsapp"></i></a>` : ''}
+            </div>`;
+          })() : ''}
         </div>`).join('')}
       </div>` : `
       <div class="empty-state" style="padding:32px">
@@ -1867,12 +1875,14 @@ function renderSplitPeople(el) {
           <div class="balance-avatar" style="width:44px;height:44px;font-size:18px;flex-shrink:0">${p.name.charAt(0).toUpperCase()}</div>
           <div style="flex:1;min-width:0">
             <div style="font-weight:700;font-size:15px">${p.name}</div>
-            ${p.email ? `<div style="font-size:12px;color:var(--text-muted)">${p.email}</div>` : ''}
+            ${p.email  ? `<div style="font-size:12px;color:var(--text-muted)"><i class="fas fa-envelope" style="width:12px"></i> ${p.email}</div>` : ''}
+            ${p.mobile ? `<div style="font-size:12px;color:var(--text-muted)"><i class="fas fa-mobile-alt" style="width:12px"></i> ${p.mobile}</div>` : ''}
             <div class="balance-amount ${net > 0 ? 'owed' : net < 0 ? 'owe' : ''}" style="font-size:13px;margin-top:4px">
               ${net === 0 ? '<span style="color:var(--text-muted)">Settled up</span>' : net > 0 ? `Owes you ${fmt(net)}` : `You owe ${fmt(Math.abs(net))}`}
             </div>
           </div>
           <div style="display:flex;flex-direction:column;gap:6px">
+            ${p.mobile ? `<a href="https://wa.me/${p.mobile.replace(/\D/g,'')}" target="_blank" class="tbl-action-btn" style="background:#25d366;color:#fff;border-color:#25d366" title="Notify via WhatsApp"><i class="fab fa-whatsapp"></i></a>` : ''}
             <button class="tbl-action-btn edit" onclick="openEditPerson('${p.id}')" title="Edit"><i class="fas fa-pencil-alt"></i></button>
             <button class="tbl-action-btn delete" onclick="deletePerson('${p.id}')" title="Delete"><i class="fas fa-trash"></i></button>
           </div>
@@ -1903,6 +1913,16 @@ function openAddPerson(prefill = {}) {
       <label class="form-label">Email <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
       <input class="form-control" id="p-email" type="email" placeholder="e.g. rahul@example.com" value="${prefill.email || ''}">
     </div>
+    <div class="form-group">
+      <label class="form-label">
+        Mobile Number <span style="color:var(--text-muted);font-weight:400">(optional)</span>
+        ${infoBtn('Include country code, e.g. +919876543210. Used to send a WhatsApp notification about shared expenses.')}
+      </label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="color:var(--text-muted);font-size:18px"><i class="fab fa-whatsapp" style="color:#25d366"></i></span>
+        <input class="form-control" id="p-mobile" type="tel" placeholder="e.g. +919876543210" value="${prefill.mobile || ''}">
+      </div>
+    </div>
   </div>
   <div class="modal-footer">
     <button class="btn btn-outline" onclick="closeModal('modal-add-person')">Cancel</button>
@@ -1918,16 +1938,17 @@ function openEditPerson(id) {
 }
 
 function savePerson(editId = null) {
-  const name  = document.getElementById('p-name').value.trim();
-  const email = document.getElementById('p-email').value.trim();
+  const name   = document.getElementById('p-name').value.trim();
+  const email  = document.getElementById('p-email').value.trim();
+  const mobile = document.getElementById('p-mobile').value.trim();
   if (!name) { toast('Please enter a name', 'error'); return; }
 
   if (editId) {
     const idx = state.split.people.findIndex(p => p.id === editId);
-    if (idx > -1) Object.assign(state.split.people[idx], { name, email });
+    if (idx > -1) Object.assign(state.split.people[idx], { name, email, mobile });
     toast('Contact updated!');
   } else {
-    state.split.people.push({ id: uid(), name, email });
+    state.split.people.push({ id: uid(), name, email, mobile });
     toast('Contact added!');
   }
   save(); closeModal('modal-add-person'); renderSplitTab();
@@ -2144,13 +2165,20 @@ function renderSplitExpenseCard(exp) {
             <span class="member-chip ${exp.paidById === 'me' ? 'me-chip' : ''}" style="font-size:12px">
               <i class="fas fa-credit-card"></i> Paid by ${exp.paidById === 'me' ? 'You' : exp.paidByName}
             </span>
-            ${otherSplits.map(s => `
+            ${otherSplits.map(s => {
+              const person = state.split.people.find(p => p.id === s.personId);
+              const mobile = person?.mobile?.replace(/\D/g, '');
+              const waMsg  = encodeURIComponent(`Hi ${s.name}! You owe ${fmt(s.amount)} for "${exp.description}" (split expense). Please settle when convenient.`);
+              const waLink = mobile ? `https://wa.me/${mobile}?text=${waMsg}` : '';
+              return `
               <span class="member-chip ${s.settled ? 'settled-chip' : ''}" style="font-size:12px">
                 ${s.name}: ${fmt(s.amount)}
                 ${s.settled
                   ? ' <i class="fas fa-check" style="color:var(--success);margin-left:2px"></i>'
                   : `<button type="button" class="settle-inline-btn" onclick="settleOneSplit('${exp.id}','${s.personId}')" title="Mark settled">✓</button>`}
-              </span>`).join('')}
+                ${!s.settled && waLink ? `<a href="${waLink}" target="_blank" class="settle-inline-btn" style="background:#25d366;text-decoration:none;display:inline-flex;align-items:center;justify-content:center" title="Notify via WhatsApp"><i class="fab fa-whatsapp"></i></a>` : ''}
+              </span>`;
+            }).join('')}
           </div>
         </div>
       </div>
