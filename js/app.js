@@ -22,6 +22,11 @@ let state = {
   investments: [],
   customCategories: [],
   customInvestments: [],
+  split: {
+    people: [],    // [{ id, name, email }]
+    groups: [],    // [{ id, name, members: [{id, name}] }]
+    expenses: [],  // [{ id, description, amount, date, groupId, paidById, paidByName, splits: [{personId, name, amount, settled}] }]
+  },
 };
 
 // ── Persistence ───────────────────────────────────────────────────────────────
@@ -35,6 +40,12 @@ function load() {
     const raw = localStorage.getItem(storageKey());
     if (raw) Object.assign(state, JSON.parse(raw));
   } catch(e) {}
+
+  // Ensure split sub-state exists for users upgrading from older saved data
+  if (!state.split) state.split = { people: [], groups: [], expenses: [] };
+  if (!state.split.people)   state.split.people   = [];
+  if (!state.split.groups)   state.split.groups   = [];
+  if (!state.split.expenses) state.split.expenses = [];
 
   // Sync display name from session if settings name is still default
   const session = getSession();
@@ -103,6 +114,7 @@ function updateTopbar() {
     expenses: ['Expenses', 'Track where your money goes'],
     income: ['Income', 'Track your earnings'],
     investments: ['Investments', 'Monitor your investment portfolio'],
+    split: ['Split', 'Split expenses & track who owes what'],
     settings: ['Settings', 'App preferences & configuration'],
   };
   const [title, subtitle] = titles[state.view] || ['', ''];
@@ -124,6 +136,7 @@ function renderView() {
     expenses: renderExpenses,
     income: renderIncome,
     investments: renderInvestments,
+    split: renderSplit,
     settings: renderSettings,
   };
   (fns[state.view] || (() => {}))(el);
@@ -1637,6 +1650,875 @@ function clearAll() {
 
 function hasData() {
   return state.budgets.length || state.expenses.length || state.incomes.length || state.investments.length;
+}
+
+// ── SPLIT ─────────────────────────────────────────────────────────────────────
+
+let splitTab = 'balances'; // tracks active sub-tab across re-renders
+
+function renderSplit(el) {
+  const tabs = [
+    { id: 'balances', label: 'Balances', icon: 'fa-scale-balanced' },
+    { id: 'expenses', label: 'Expenses', icon: 'fa-receipt' },
+    { id: 'groups',   label: 'Groups',   icon: 'fa-layer-group' },
+    { id: 'people',   label: 'People',   icon: 'fa-user-friends' },
+  ];
+
+  el.innerHTML = `
+  <div class="section-header">
+    <div class="section-title">
+      <i class="fas fa-users" style="color:var(--primary)"></i>
+      Split Expenses
+      ${infoBtn('Split bills with friends, family, or groups. Track who owes what and settle up easily.')}
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="openAddSplitExpense()">
+        <i class="fas fa-plus"></i> Add Split Expense
+      </button>
+    </div>
+  </div>
+
+  <div class="split-tabs">
+    ${tabs.map(t => `
+      <button class="split-tab ${splitTab===t.id?'active':''}" onclick="switchSplitTab('${t.id}')">
+        <i class="fas ${t.icon}"></i> ${t.label}
+      </button>`).join('')}
+  </div>
+
+  <div id="split-tab-content"></div>`;
+
+  renderSplitTab();
+}
+
+function switchSplitTab(tab) {
+  splitTab = tab;
+  document.querySelectorAll('.split-tab').forEach(el =>
+    el.classList.toggle('active', el.dataset && el.dataset.id === tab || el.textContent.trim().toLowerCase().split(' ').pop() === tab)
+  );
+  renderSplitTab();
+}
+
+function renderSplitTab() {
+  const el = document.getElementById('split-tab-content');
+  if (!el) return;
+  const fns = {
+    balances: renderSplitBalances,
+    expenses: renderSplitExpensesList,
+    groups:   renderSplitGroups,
+    people:   renderSplitPeople,
+  };
+  (fns[splitTab] || renderSplitBalances)(el);
+}
+
+// ── Balance computation ───────────────────────────────────────────────────────
+
+function computeBalances() {
+  const balances = {}; // { personId: { name, net } }  positive = they owe me, negative = I owe them
+
+  for (const exp of state.split.expenses) {
+    for (const split of exp.splits) {
+      if (split.settled) continue;
+
+      if (exp.paidById === 'me') {
+        // I paid — others owe me their share
+        if (split.personId !== 'me') {
+          if (!balances[split.personId]) balances[split.personId] = { name: split.name, net: 0 };
+          balances[split.personId].net += split.amount;
+        }
+      } else {
+        // Someone else paid — I owe them my share
+        if (split.personId === 'me') {
+          const pid = exp.paidById;
+          if (!balances[pid]) balances[pid] = { name: exp.paidByName, net: 0 };
+          balances[pid].net -= split.amount;
+        }
+      }
+    }
+  }
+
+  return balances;
+}
+
+// ── Balances tab ──────────────────────────────────────────────────────────────
+
+function renderSplitBalances(el) {
+  const balances = computeBalances();
+  const entries  = Object.entries(balances);
+  const totalOwedToMe = entries.filter(([,b]) => b.net > 0).reduce((s,[,b]) => s + b.net, 0);
+  const totalIOwe     = entries.filter(([,b]) => b.net < 0).reduce((s,[,b]) => s + Math.abs(b.net), 0);
+  const net = totalOwedToMe - totalIOwe;
+
+  const groupBalances = state.split.groups.map(g => {
+    const gExp = state.split.expenses.filter(e => e.groupId === g.id);
+    let owedToMe = 0, iOwe = 0;
+    for (const exp of gExp) {
+      for (const split of exp.splits) {
+        if (split.settled) continue;
+        if (exp.paidById === 'me' && split.personId !== 'me') owedToMe += split.amount;
+        if (exp.paidById !== 'me' && split.personId === 'me') iOwe += split.amount;
+      }
+    }
+    return { ...g, owedToMe, iOwe, net: owedToMe - iOwe, expCount: gExp.length };
+  });
+
+  el.innerHTML = `
+  <div class="stats-grid" style="margin-bottom:20px">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:var(--success-bg);color:var(--success)"><i class="fas fa-arrow-circle-down"></i></div>
+      <div class="stat-info">
+        <div class="stat-label">Owed to You ${infoBtn('Total amount others owe you across all unsettled expenses')}</div>
+        <div class="stat-value" style="color:var(--success)">${fmt(totalOwedToMe)}</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:var(--danger-bg);color:var(--danger)"><i class="fas fa-arrow-circle-up"></i></div>
+      <div class="stat-info">
+        <div class="stat-label">You Owe ${infoBtn('Total amount you owe others across all unsettled expenses')}</div>
+        <div class="stat-value" style="color:var(--danger)">${fmt(totalIOwe)}</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:var(--primary-bg);color:var(--primary)"><i class="fas fa-scale-balanced"></i></div>
+      <div class="stat-info">
+        <div class="stat-label">Net Balance ${infoBtn('Positive means more is owed to you than what you owe.')}</div>
+        <div class="stat-value" style="color:${net>=0?'var(--success)':'var(--danger)'}">${net>=0?'+':''}${fmt(net)}</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:var(--warning-bg);color:var(--warning)"><i class="fas fa-receipt"></i></div>
+      <div class="stat-info">
+        <div class="stat-label">Split Expenses</div>
+        <div class="stat-value" style="color:var(--warning)">${state.split.expenses.length}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="gap:20px">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-user-friends" style="color:var(--primary)"></i> People Balances</div>
+      </div>
+      ${entries.length ? `<div style="padding:0">
+        ${entries.map(([pid, b]) => `
+        <div class="balance-row">
+          <div class="balance-avatar">${b.name.charAt(0).toUpperCase()}</div>
+          <div style="flex:1;min-width:0">
+            <div class="balance-name">${b.name}</div>
+            <div class="balance-sub">${b.net > 0 ? 'owes you' : 'you owe'}</div>
+          </div>
+          <div class="balance-amount ${b.net >= 0 ? 'owed' : 'owe'}">${b.net >= 0 ? '+' : ''}${fmt(b.net)}</div>
+          ${b.net !== 0 ? `<button class="btn btn-sm btn-outline-primary" onclick="settleWithPerson('${pid}')" title="Settle all with this person">
+            <i class="fas fa-check"></i> Settle
+          </button>` : ''}
+        </div>`).join('')}
+      </div>` : `
+      <div class="empty-state" style="padding:32px">
+        <i class="fas fa-handshake"></i>
+        <h3>All settled up!</h3>
+        <p>No outstanding balances. Add a split expense to get started.</p>
+      </div>`}
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-layer-group" style="color:var(--primary)"></i> Group Balances</div>
+      </div>
+      ${state.split.groups.length ? `<div style="padding:0">
+        ${groupBalances.map(g => `
+        <div class="balance-row" style="cursor:pointer" onclick="switchSplitTab('groups')">
+          <div class="balance-avatar" style="background:var(--primary-bg);color:var(--primary)">${g.name.charAt(0).toUpperCase()}</div>
+          <div style="flex:1;min-width:0">
+            <div class="balance-name">${g.name}</div>
+            <div class="balance-sub">${g.members.length} member${g.members.length!==1?'s':''} · ${g.expCount} expense${g.expCount!==1?'s':''}</div>
+          </div>
+          <div class="balance-amount ${g.net >= 0 ? 'owed' : 'owe'}">${g.net >= 0 ? '+' : ''}${fmt(g.net)}</div>
+        </div>`).join('')}
+      </div>` : `
+      <div class="empty-state" style="padding:32px">
+        <i class="fas fa-layer-group"></i>
+        <h3>No groups yet</h3>
+        <p>Create a group to split expenses with multiple people at once.</p>
+        <button class="btn btn-primary" onclick="switchSplitTab('groups')"><i class="fas fa-plus"></i> Create Group</button>
+      </div>`}
+    </div>
+  </div>`;
+}
+
+// ── People tab ────────────────────────────────────────────────────────────────
+
+function renderSplitPeople(el) {
+  const balances = computeBalances();
+  el.innerHTML = `
+  <div class="section-header" style="margin-bottom:16px">
+    <div class="section-title" style="font-size:14px;font-weight:700">
+      <i class="fas fa-user-friends" style="color:var(--primary)"></i>
+      Your Contacts (${state.split.people.length})
+    </div>
+    <button class="btn btn-primary" onclick="openAddPerson()"><i class="fas fa-user-plus"></i> Add Person</button>
+  </div>
+  ${state.split.people.length ? `
+  <div class="grid-auto">
+    ${state.split.people.map(p => {
+      const bal = balances[p.id];
+      const net = bal ? bal.net : 0;
+      return `
+      <div class="card person-card">
+        <div style="display:flex;align-items:center;gap:12px;padding:16px">
+          <div class="balance-avatar" style="width:44px;height:44px;font-size:18px;flex-shrink:0">${p.name.charAt(0).toUpperCase()}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:15px">${p.name}</div>
+            ${p.email ? `<div style="font-size:12px;color:var(--text-muted)">${p.email}</div>` : ''}
+            <div class="balance-amount ${net > 0 ? 'owed' : net < 0 ? 'owe' : ''}" style="font-size:13px;margin-top:4px">
+              ${net === 0 ? '<span style="color:var(--text-muted)">Settled up</span>' : net > 0 ? `Owes you ${fmt(net)}` : `You owe ${fmt(Math.abs(net))}`}
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <button class="tbl-action-btn edit" onclick="openEditPerson('${p.id}')" title="Edit"><i class="fas fa-pencil-alt"></i></button>
+            <button class="tbl-action-btn delete" onclick="deletePerson('${p.id}')" title="Delete"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>` : `
+  <div class="empty-state">
+    <i class="fas fa-user-friends"></i>
+    <h3>No contacts yet</h3>
+    <p>Add people you frequently split expenses with.</p>
+    <button class="btn btn-primary" onclick="openAddPerson()"><i class="fas fa-user-plus"></i> Add Person</button>
+  </div>`}`;
+}
+
+function openAddPerson(prefill = {}) {
+  openModal('modal-add-person', `
+  <div class="modal-header">
+    <div class="modal-title"><i class="fas fa-user-plus" style="color:var(--primary)"></i> ${prefill.id ? 'Edit' : 'Add'} Person</div>
+    <button class="modal-close" onclick="closeModal('modal-add-person')"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="modal-body">
+    <div class="form-group">
+      <label class="form-label">Name <span class="required">*</span></label>
+      <input class="form-control" id="p-name" placeholder="e.g. Rahul Sharma" value="${prefill.name || ''}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+      <input class="form-control" id="p-email" type="email" placeholder="e.g. rahul@example.com" value="${prefill.email || ''}">
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-outline" onclick="closeModal('modal-add-person')">Cancel</button>
+    <button class="btn btn-primary" onclick="savePerson(${prefill.id ? `'${prefill.id}'` : null})">
+      <i class="fas fa-save"></i> ${prefill.id ? 'Update' : 'Save'} Person
+    </button>
+  </div>`);
+}
+
+function openEditPerson(id) {
+  const p = state.split.people.find(x => x.id === id);
+  if (p) openAddPerson({ ...p });
+}
+
+function savePerson(editId = null) {
+  const name  = document.getElementById('p-name').value.trim();
+  const email = document.getElementById('p-email').value.trim();
+  if (!name) { toast('Please enter a name', 'error'); return; }
+
+  if (editId) {
+    const idx = state.split.people.findIndex(p => p.id === editId);
+    if (idx > -1) Object.assign(state.split.people[idx], { name, email });
+    toast('Contact updated!');
+  } else {
+    state.split.people.push({ id: uid(), name, email });
+    toast('Contact added!');
+  }
+  save(); closeModal('modal-add-person'); renderSplitTab();
+}
+
+function deletePerson(id) {
+  if (!confirm('Delete this contact? Their split expense records will remain.')) return;
+  state.split.people = state.split.people.filter(p => p.id !== id);
+  save(); renderSplitTab(); toast('Contact deleted', 'warning');
+}
+
+// ── Groups tab ────────────────────────────────────────────────────────────────
+
+function renderSplitGroups(el) {
+  el.innerHTML = `
+  <div class="section-header" style="margin-bottom:16px">
+    <div class="section-title" style="font-size:14px;font-weight:700">
+      <i class="fas fa-layer-group" style="color:var(--primary)"></i>
+      Groups (${state.split.groups.length})
+    </div>
+    <button class="btn btn-primary" onclick="openAddGroup()"><i class="fas fa-plus"></i> New Group</button>
+  </div>
+  ${state.split.groups.length ? `
+  <div class="grid-auto">
+    ${state.split.groups.map(g => {
+      const gExp = state.split.expenses.filter(e => e.groupId === g.id);
+      const total = gExp.reduce((s, e) => s + e.amount, 0);
+      return `
+      <div class="card group-card">
+        <div class="card-header">
+          <div>
+            <div style="font-weight:700;font-size:15px">${g.name}</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${g.members.length} member${g.members.length!==1?'s':''} · ${gExp.length} expense${gExp.length!==1?'s':''}</div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="tbl-action-btn edit" onclick="openEditGroup('${g.id}')" title="Edit"><i class="fas fa-pencil-alt"></i></button>
+            <button class="tbl-action-btn delete" onclick="deleteGroup('${g.id}')" title="Delete"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>
+        <div style="padding:14px 16px">
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+            <span class="member-chip me-chip"><i class="fas fa-user"></i> You</span>
+            ${g.members.map(m => `<span class="member-chip">${m.name}</span>`).join('')}
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12px;color:var(--text-muted)">Total split</span>
+            <span style="font-weight:700;color:var(--primary)">${fmt(total)}</span>
+          </div>
+        </div>
+        <div class="card-footer">
+          <button class="btn btn-sm btn-outline-primary" onclick="openAddSplitExpense({groupId:'${g.id}'})">
+            <i class="fas fa-plus"></i> Add Expense to Group
+          </button>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>` : `
+  <div class="empty-state">
+    <i class="fas fa-layer-group"></i>
+    <h3>No groups yet</h3>
+    <p>Create groups like "Goa Trip", "Flatmates", or "Family" to split expenses easily.</p>
+    <button class="btn btn-primary" onclick="openAddGroup()"><i class="fas fa-plus"></i> Create Group</button>
+  </div>`}`;
+}
+
+function openAddGroup(prefill = {}) {
+  const existingMembers = prefill.members || [];
+  openModal('modal-add-group', `
+  <div class="modal-header">
+    <div class="modal-title"><i class="fas fa-layer-group" style="color:var(--primary)"></i> ${prefill.id ? 'Edit' : 'Create'} Group</div>
+    <button class="modal-close" onclick="closeModal('modal-add-group')"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="modal-body">
+    <div class="form-group">
+      <label class="form-label">Group Name <span class="required">*</span></label>
+      <input class="form-control" id="g-name" placeholder="e.g. Goa Trip, Flatmates…" value="${prefill.name || ''}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Members ${infoBtn('"You" are always a member. Add others below.')}</label>
+      <div style="margin-bottom:8px">
+        <span class="member-chip me-chip"><i class="fas fa-user"></i> You (always included)</span>
+      </div>
+      <div id="g-members-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+        ${existingMembers.map(m => `
+          <span class="member-chip removable" data-id="${m.id}" data-name="${m.name}">
+            ${m.name} <button type="button" onclick="removeGroupMember(this)" style="background:none;border:none;cursor:pointer;color:var(--danger);padding:0 0 0 4px;font-size:12px;line-height:1">×</button>
+          </span>`).join('')}
+      </div>
+      <div style="display:flex;gap:8px">
+        <input class="form-control" id="g-new-member" placeholder="Type a member name…"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();addGroupMemberFromInput();}">
+        <button type="button" class="btn btn-outline" onclick="addGroupMemberFromInput()"><i class="fas fa-plus"></i> Add</button>
+      </div>
+      ${state.split.people.length ? `
+      <div style="margin-top:10px">
+        <div style="font-size:12px;color:var(--text-muted);font-weight:500;margin-bottom:6px">Pick from contacts:</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${state.split.people.map(p => `
+            <button type="button" class="btn btn-sm btn-outline" onclick="addGroupMemberById('${p.id}','${p.name.replace(/'/g,"\\'")}')">+ ${p.name}</button>`).join('')}
+        </div>
+      </div>` : ''}
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-outline" onclick="closeModal('modal-add-group')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveGroup(${prefill.id ? `'${prefill.id}'` : null})">
+      <i class="fas fa-save"></i> ${prefill.id ? 'Update' : 'Create'} Group
+    </button>
+  </div>`);
+}
+
+function addGroupMemberFromInput() {
+  const input = document.getElementById('g-new-member');
+  const name = input.value.trim();
+  if (!name) return;
+  addGroupMemberChip(uid(), name);
+  input.value = '';
+  input.focus();
+}
+
+function addGroupMemberById(id, name) {
+  const list = document.getElementById('g-members-list');
+  if (list.querySelector(`[data-id="${id}"]`)) { toast('Already added', 'info'); return; }
+  addGroupMemberChip(id, name);
+}
+
+function addGroupMemberChip(id, name) {
+  const list = document.getElementById('g-members-list');
+  if (list.querySelector(`[data-id="${id}"]`)) return;
+  const chip = document.createElement('span');
+  chip.className = 'member-chip removable';
+  chip.dataset.id   = id;
+  chip.dataset.name = name;
+  chip.innerHTML = `${name} <button type="button" onclick="removeGroupMember(this)" style="background:none;border:none;cursor:pointer;color:var(--danger);padding:0 0 0 4px;font-size:12px;line-height:1">×</button>`;
+  list.appendChild(chip);
+}
+
+function removeGroupMember(btn) { btn.closest('.member-chip').remove(); }
+
+function saveGroup(editId = null) {
+  const name = document.getElementById('g-name').value.trim();
+  if (!name) { toast('Please enter a group name', 'error'); return; }
+
+  const chips = document.querySelectorAll('#g-members-list .member-chip');
+  const members = [...chips].map(c => ({ id: c.dataset.id, name: c.dataset.name }));
+
+  if (editId) {
+    const idx = state.split.groups.findIndex(g => g.id === editId);
+    if (idx > -1) Object.assign(state.split.groups[idx], { name, members });
+    toast('Group updated!');
+  } else {
+    state.split.groups.push({ id: uid(), name, members });
+    toast('Group created!');
+  }
+  save(); closeModal('modal-add-group'); renderSplitTab();
+}
+
+function openEditGroup(id) {
+  const g = state.split.groups.find(x => x.id === id);
+  if (g) openAddGroup({ ...g });
+}
+
+function deleteGroup(id) {
+  if (!confirm('Delete this group? Its expenses will remain but lose the group link.')) return;
+  state.split.groups = state.split.groups.filter(g => g.id !== id);
+  state.split.expenses.forEach(e => { if (e.groupId === id) e.groupId = null; });
+  save(); renderSplitTab(); toast('Group deleted', 'warning');
+}
+
+// ── Split Expenses tab ────────────────────────────────────────────────────────
+
+function renderSplitExpensesList(el) {
+  const expenses = [...state.split.expenses].reverse();
+  el.innerHTML = `
+  <div class="section-header" style="margin-bottom:16px">
+    <div class="section-title" style="font-size:14px;font-weight:700">
+      <i class="fas fa-receipt" style="color:var(--primary)"></i>
+      Split Expenses (${expenses.length})
+    </div>
+    <button class="btn btn-primary" onclick="openAddSplitExpense()"><i class="fas fa-plus"></i> Add Split Expense</button>
+  </div>
+  ${expenses.length ? `
+  <div style="display:flex;flex-direction:column;gap:12px">
+    ${expenses.map(exp => renderSplitExpenseCard(exp)).join('')}
+  </div>` : `
+  <div class="empty-state">
+    <i class="fas fa-receipt"></i>
+    <h3>No split expenses yet</h3>
+    <p>Add a split expense to start tracking shared costs.</p>
+    <button class="btn btn-primary" onclick="openAddSplitExpense()"><i class="fas fa-plus"></i> Add Split Expense</button>
+  </div>`}`;
+}
+
+function renderSplitExpenseCard(exp) {
+  const group = exp.groupId ? state.split.groups.find(g => g.id === exp.groupId) : null;
+  const otherSplits = exp.splits.filter(s => s.personId !== 'me');
+  const allSettled = otherSplits.length > 0 && otherSplits.every(s => s.settled);
+
+  return `
+  <div class="card split-exp-card ${allSettled ? 'settled' : ''}">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px">
+      <div style="display:flex;gap:12px;flex:1;min-width:0">
+        <div class="split-exp-icon">
+          <i class="fas ${allSettled ? 'fa-check-circle' : 'fa-receipt'}" style="color:${allSettled ? 'var(--success)' : 'var(--primary)'}"></i>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:15px">${exp.description}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span>${new Date(exp.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</span>
+            ${group ? `<span class="member-chip" style="padding:1px 7px;font-size:11px">${group.name}</span>` : ''}
+            ${allSettled ? '<span style="color:var(--success);font-weight:600">Settled</span>' : ''}
+          </div>
+          <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">
+            <span class="member-chip ${exp.paidById === 'me' ? 'me-chip' : ''}" style="font-size:12px">
+              <i class="fas fa-credit-card"></i> Paid by ${exp.paidById === 'me' ? 'You' : exp.paidByName}
+            </span>
+            ${otherSplits.map(s => `
+              <span class="member-chip ${s.settled ? 'settled-chip' : ''}" style="font-size:12px">
+                ${s.name}: ${fmt(s.amount)}
+                ${s.settled
+                  ? ' <i class="fas fa-check" style="color:var(--success);margin-left:2px"></i>'
+                  : `<button type="button" class="settle-inline-btn" onclick="settleOneSplit('${exp.id}','${s.personId}')" title="Mark settled">✓</button>`}
+              </span>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:20px;font-weight:800;color:var(--primary)">${fmt(exp.amount)}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">total</div>
+        <div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end">
+          <button class="tbl-action-btn edit" onclick="openEditSplitExpense('${exp.id}')" title="Edit"><i class="fas fa-pencil-alt"></i></button>
+          <button class="tbl-action-btn delete" onclick="deleteSplitExpense('${exp.id}')" title="Delete"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function openAddSplitExpense(prefill = {}) {
+  const session = getSession();
+  const meName = session ? session.name : 'You';
+  const today  = new Date().toISOString().split('T')[0];
+  const allPeople = state.split.people;
+  const groups    = state.split.groups;
+
+  const prefillGroup = prefill.groupId
+    ? state.split.groups.find(g => g.id === prefill.groupId)
+    : null;
+
+  openModal('modal-split-exp', `
+  <div class="modal-header">
+    <div class="modal-title"><i class="fas fa-receipt" style="color:var(--primary)"></i> ${prefill.id ? 'Edit' : 'Add'} Split Expense</div>
+    <button class="modal-close" onclick="closeModal('modal-split-exp')"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="modal-body">
+    <div class="form-row">
+      <div class="form-group" style="flex:2">
+        <label class="form-label">Description <span class="required">*</span></label>
+        <input class="form-control" id="se-desc" placeholder="e.g. Dinner, Hotel, Cab fare…" value="${prefill.description || ''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date <span class="required">*</span></label>
+        <input type="date" class="form-control" id="se-date" value="${prefill.date || today}">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Total Amount <span class="required">*</span></label>
+      <div class="amount-input-wrap">
+        <span class="currency-prefix">${state.settings.symbol}</span>
+        <input type="number" class="form-control" id="se-amount" placeholder="0" min="0" step="0.01"
+          value="${prefill.amount || ''}" oninput="window._splitType==='percent'?onPercentInput():recalcSplitAmounts()">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Paid By <span class="required">*</span></label>
+        <select class="form-control" id="se-paidby">
+          <option value="me" ${!prefill.paidById || prefill.paidById==='me' ? 'selected' : ''}>You (${meName})</option>
+          ${allPeople.map(p => `<option value="${p.id}" ${prefill.paidById===p.id?'selected':''}>${p.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Group <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+        <select class="form-control" id="se-group" onchange="onSplitGroupChange()">
+          <option value="">— No Group —</option>
+          ${groups.map(g => `<option value="${g.id}" ${(prefill.groupId||prefillGroup?.id)===g.id?'selected':''}>${g.name}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Split With ${infoBtn('People sharing this expense. Use equal split or enter custom amounts.')}</label>
+      <div id="se-participants"></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <select class="form-control" id="se-pick-person">
+          <option value="">Pick from contacts…</option>
+          ${allPeople.map(p => `<option value="${p.id}" data-name="${p.name}">${p.name}</option>`).join('')}
+        </select>
+        <button type="button" class="btn btn-outline" onclick="addSplitParticipantFromSelect()"><i class="fas fa-plus"></i></button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <input class="form-control" id="se-new-person-name" placeholder="Or type a name…">
+        <button type="button" class="btn btn-outline" onclick="addSplitParticipantFromInput()"><i class="fas fa-user-plus"></i></button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Split Type</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" id="split-type-equal"   class="btn btn-sm btn-primary" onclick="setSplitType('equal')">Equal Split</button>
+        <button type="button" id="split-type-custom"  class="btn btn-sm btn-outline" onclick="setSplitType('custom')">Custom Amounts</button>
+        <button type="button" id="split-type-percent" class="btn btn-sm btn-outline" onclick="setSplitType('percent')">% Percentage</button>
+      </div>
+      <div id="se-split-summary" style="margin-top:8px;font-size:12px;color:var(--text-muted)"></div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-outline" onclick="closeModal('modal-split-exp')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveSplitExpense(${prefill.id ? `'${prefill.id}'` : null})">
+      <i class="fas fa-save"></i> ${prefill.id ? 'Update' : 'Save'} Split Expense
+    </button>
+  </div>`);
+
+  window._splitType = 'equal';
+
+  if (prefill.id) {
+    // Restore participants (exclude 'me')
+    (prefill.splits || []).filter(s => s.personId !== 'me').forEach(s =>
+      addSplitParticipantRow(s.personId, s.name, s.amount, s.settled)
+    );
+  } else if (prefillGroup) {
+    prefillGroup.members.forEach(m => addSplitParticipantRow(m.id, m.name, 0, false));
+    recalcSplitAmounts();
+  }
+}
+
+function addSplitParticipantFromSelect() {
+  const sel  = document.getElementById('se-pick-person');
+  const id   = sel.value;
+  const name = sel.options[sel.selectedIndex]?.dataset?.name;
+  if (!id || !name) { toast('Please select a person', 'info'); return; }
+  addSplitParticipantRow(id, name, 0, false);
+  sel.value = '';
+  recalcSplitAmounts();
+}
+
+function addSplitParticipantFromInput() {
+  const input = document.getElementById('se-new-person-name');
+  const name  = input.value.trim();
+  if (!name) return;
+  addSplitParticipantRow(uid(), name, 0, false);
+  input.value = '';
+  recalcSplitAmounts();
+}
+
+function addSplitParticipantRow(id, name, amount, settled) {
+  const container = document.getElementById('se-participants');
+  if (!container) return;
+  if (container.querySelector(`[data-pid="${id}"]`)) { toast(`${name} already added`, 'info'); return; }
+
+  const inPctMode = window._splitType === 'percent';
+
+  const row = document.createElement('div');
+  row.className = 'split-participant-row';
+  row.dataset.pid = id;
+  row.innerHTML = `
+    <div class="balance-avatar" style="width:32px;height:32px;font-size:13px;flex-shrink:0">${name.charAt(0).toUpperCase()}</div>
+    <span style="flex:1;font-weight:500">${name}</span>
+    <div class="split-amt-wrap" style="width:150px;${inPctMode ? 'display:none' : ''}">
+      <div class="amount-input-wrap">
+        <span class="currency-prefix">${state.settings.symbol}</span>
+        <input type="number" class="form-control split-amt-input" data-pid="${id}" data-name="${name}"
+          placeholder="0" min="0" step="0.01" value="${amount > 0 ? amount : ''}"
+          oninput="onCustomSplitInput()" style="padding-left:28px">
+      </div>
+    </div>
+    <div class="split-pct-wrap" style="width:110px;${inPctMode ? 'display:flex' : 'display:none'};align-items:center;gap:4px">
+      <input type="number" class="form-control split-pct-input" data-pid="${id}" data-name="${name}"
+        placeholder="0" min="0" max="100" step="0.1"
+        oninput="onPercentInput()" style="text-align:right;padding-right:8px">
+      <span style="font-weight:600;color:var(--text-muted);flex-shrink:0">%</span>
+    </div>
+    <button type="button" onclick="removeSplitParticipant(this)"
+      style="background:none;border:none;cursor:pointer;color:var(--danger);padding:4px 6px;font-size:16px;line-height:1">×</button>`;
+  container.appendChild(row);
+  updateSplitSummary();
+}
+
+function removeSplitParticipant(btn) {
+  btn.closest('.split-participant-row').remove();
+  recalcSplitAmounts();
+}
+
+function setSplitType(type) {
+  const prev = window._splitType;
+  window._splitType = type;
+
+  document.getElementById('split-type-equal').className   = `btn btn-sm ${type==='equal'   ? 'btn-primary' : 'btn-outline'}`;
+  document.getElementById('split-type-custom').className  = `btn btn-sm ${type==='custom'  ? 'btn-primary' : 'btn-outline'}`;
+  document.getElementById('split-type-percent').className = `btn btn-sm ${type==='percent' ? 'btn-primary' : 'btn-outline'}`;
+
+  const inPct = type === 'percent';
+  document.querySelectorAll('.split-amt-wrap').forEach(el => { el.style.display = inPct ? 'none' : ''; });
+  document.querySelectorAll('.split-pct-wrap').forEach(el => { el.style.display = inPct ? 'flex' : 'none'; });
+
+  if (type === 'equal') {
+    recalcSplitAmounts();
+  } else if (type === 'percent') {
+    // Convert existing amounts to percentages (if total is set), else distribute equally
+    const total = parseFloat(document.getElementById('se-amount')?.value) || 0;
+    const pctInputs = document.querySelectorAll('.split-pct-input');
+    const amtInputs = document.querySelectorAll('.split-amt-input');
+    const n = pctInputs.length + 1; // +1 for me
+    pctInputs.forEach((inp, i) => {
+      const existingAmt = parseFloat(amtInputs[i]?.value) || 0;
+      if (total > 0 && prev !== 'equal' && existingAmt > 0) {
+        inp.value = parseFloat((existingAmt / total * 100).toFixed(2));
+      } else {
+        inp.value = n > 1 ? parseFloat((100 / n).toFixed(2)) : '';
+      }
+    });
+    onPercentInput();
+  } else {
+    updateSplitSummary();
+  }
+}
+
+function onCustomSplitInput() {
+  window._splitType = 'custom';
+  document.getElementById('split-type-equal').className   = 'btn btn-sm btn-outline';
+  document.getElementById('split-type-custom').className  = 'btn btn-sm btn-primary';
+  document.getElementById('split-type-percent').className = 'btn btn-sm btn-outline';
+  updateSplitSummary();
+}
+
+function onPercentInput() {
+  const total     = parseFloat(document.getElementById('se-amount')?.value) || 0;
+  const pctInputs = document.querySelectorAll('.split-pct-input');
+  const amtInputs = document.querySelectorAll('.split-amt-input');
+  pctInputs.forEach((pct, i) => {
+    const p = parseFloat(pct.value) || 0;
+    if (amtInputs[i]) amtInputs[i].value = total > 0 ? parseFloat((total * p / 100).toFixed(2)) : '';
+  });
+  updateSplitSummary();
+}
+
+function recalcSplitAmounts() {
+  const type   = window._splitType;
+  const total  = parseFloat(document.getElementById('se-amount')?.value) || 0;
+
+  if (type === 'equal') {
+    const amtInputs = document.querySelectorAll('.split-amt-input');
+    const n = amtInputs.length + 1; // +1 for "me"
+    const share = n > 1 ? parseFloat((total / n).toFixed(2)) : total;
+    amtInputs.forEach(inp => { inp.value = share > 0 ? share : ''; });
+  } else if (type === 'percent') {
+    onPercentInput(); // recompute amounts from existing percentages
+    return;
+  }
+
+  updateSplitSummary();
+}
+
+function updateSplitSummary() {
+  const el = document.getElementById('se-split-summary');
+  if (!el) return;
+  const total     = parseFloat(document.getElementById('se-amount')?.value) || 0;
+  const amtInputs = document.querySelectorAll('.split-amt-input');
+  const pctInputs = document.querySelectorAll('.split-pct-input');
+
+  if (!amtInputs.length) { el.textContent = 'Add people to split with.'; el.style.color = 'var(--text-muted)'; return; }
+
+  if (window._splitType === 'percent') {
+    const othersTotal = [...pctInputs].reduce((s, i) => s + (parseFloat(i.value) || 0), 0);
+    const myPct  = parseFloat((100 - othersTotal).toFixed(2));
+    const myAmt  = total > 0 ? parseFloat((total * myPct / 100).toFixed(2)) : 0;
+    const over   = othersTotal > 100;
+    el.innerHTML = `Your share: <strong>${myPct >= 0 ? myPct : '—'}%</strong>${total > 0 ? ` (${state.settings.symbol}${myAmt >= 0 ? myAmt.toFixed(2) : '—'})` : ''}
+      &nbsp;·&nbsp; Others: <strong>${othersTotal.toFixed(1)}%</strong>
+      ${over ? ' <span style="color:var(--danger);font-weight:600">⚠ exceeds 100%</span>' : ''}`;
+    el.style.color = (myPct < 0 || over) ? 'var(--danger)' : 'var(--text-muted)';
+  } else {
+    const othersTotal = [...amtInputs].reduce((s, i) => s + (parseFloat(i.value) || 0), 0);
+    const myShare = parseFloat((total - othersTotal).toFixed(2));
+    el.textContent = `Your share: ${state.settings.symbol}${myShare >= 0 ? myShare.toFixed(2) : '—'}  |  Others: ${state.settings.symbol}${othersTotal.toFixed(2)}`;
+    el.style.color = myShare < 0 ? 'var(--danger)' : 'var(--text-muted)';
+  }
+}
+
+function onSplitGroupChange() {
+  const gid = document.getElementById('se-group')?.value;
+  if (!gid) return;
+  const group = state.split.groups.find(g => g.id === gid);
+  if (!group) return;
+  const container = document.getElementById('se-participants');
+  if (!container) return;
+  container.innerHTML = '';
+  group.members.forEach(m => addSplitParticipantRow(m.id, m.name, 0, false));
+  recalcSplitAmounts();
+}
+
+function saveSplitExpense(editId = null) {
+  const desc       = document.getElementById('se-desc').value.trim();
+  const amount     = parseFloat(document.getElementById('se-amount').value);
+  const date       = document.getElementById('se-date').value;
+  const paidById   = document.getElementById('se-paidby').value;
+  const paidByName = paidById === 'me'
+    ? (getSession()?.name || 'You')
+    : (state.split.people.find(p => p.id === paidById)?.name || 'Unknown');
+  const groupId = document.getElementById('se-group').value || null;
+
+  if (!desc)                  { toast('Please enter a description', 'error'); return; }
+  if (!amount || amount <= 0) { toast('Please enter a valid amount', 'error'); return; }
+  if (!date)                  { toast('Please select a date', 'error'); return; }
+
+  const inputs = document.querySelectorAll('.split-amt-input');
+  if (!inputs.length)         { toast('Please add at least one person to split with', 'error'); return; }
+
+  // In percent mode ensure percentages don't exceed 100 before reading computed amounts
+  if (window._splitType === 'percent') {
+    const pctInputs = document.querySelectorAll('.split-pct-input');
+    const totalPct  = [...pctInputs].reduce((s, i) => s + (parseFloat(i.value) || 0), 0);
+    if (totalPct > 100) { toast('Percentages exceed 100%. Please fix them before saving.', 'error'); return; }
+    onPercentInput(); // ensure amt inputs are up to date
+  }
+
+  const otherSplits = [...inputs].map(inp => ({
+    personId: inp.dataset.pid,
+    name:     inp.dataset.name,
+    amount:   parseFloat(inp.value) || 0,
+    settled:  false,
+  }));
+
+  const othersTotal = otherSplits.reduce((s, x) => s + x.amount, 0);
+  const myShare     = parseFloat((amount - othersTotal).toFixed(2));
+
+  if (myShare < 0) { toast('Others\' amounts exceed the total. Please fix the amounts.', 'error'); return; }
+
+  const splits = [
+    { personId: 'me', name: getSession()?.name || 'You', amount: myShare, settled: false },
+    ...otherSplits,
+  ];
+
+  const entry = { description: desc, amount, date, groupId, paidById, paidByName, splits };
+
+  if (editId) {
+    const idx = state.split.expenses.findIndex(e => e.id === editId);
+    if (idx > -1) Object.assign(state.split.expenses[idx], entry);
+    toast('Split expense updated!');
+  } else {
+    state.split.expenses.push({ id: uid(), ...entry });
+    toast('Split expense added!');
+  }
+  save(); closeModal('modal-split-exp'); renderSplitTab();
+}
+
+function openEditSplitExpense(id) {
+  const exp = state.split.expenses.find(e => e.id === id);
+  if (exp) openAddSplitExpense({ ...exp });
+}
+
+function deleteSplitExpense(id) {
+  if (!confirm('Delete this split expense?')) return;
+  state.split.expenses = state.split.expenses.filter(e => e.id !== id);
+  save(); renderSplitTab(); toast('Split expense deleted', 'warning');
+}
+
+function settleOneSplit(expId, personId) {
+  const exp = state.split.expenses.find(e => e.id === expId);
+  if (!exp) return;
+  const split = exp.splits.find(s => s.personId === personId);
+  if (split) split.settled = true;
+  save(); renderSplitTab(); toast('Marked as settled!');
+}
+
+function settleWithPerson(personId) {
+  if (!confirm('Mark all unsettled expenses with this person as settled?')) return;
+  let count = 0;
+  for (const exp of state.split.expenses) {
+    for (const split of exp.splits) {
+      if (!split.settled) {
+        if ((exp.paidById === 'me' && split.personId === personId) ||
+            (exp.paidById === personId && split.personId === 'me')) {
+          split.settled = true; count++;
+        }
+      }
+    }
+  }
+  save(); renderSplitTab(); toast(`Settled ${count} split${count !== 1 ? 's' : ''} with this person!`);
 }
 
 // ── MODAL helpers ─────────────────────────────────────────────────────────────
