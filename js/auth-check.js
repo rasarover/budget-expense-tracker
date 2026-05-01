@@ -14,12 +14,12 @@ function logout() {
   window.location.href = 'auth.html';
 }
 
-// ── Auth gate: redirect to auth.html if no active session ─────────────────
+// ── Auth gate: redirect to landing page if no active session ──────────────
 
 (function checkAuth() {
   const session = getSession();
   if (!session || !session.userId) {
-    window.location.replace('auth.html');
+    window.location.replace('landing.html');
     return;
   }
 
